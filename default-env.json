@@ -1,0 +1,50 @@
+{
+  "S4_DESTINATION_NAME": "S4HANA_ON_PREM",
+  "VCAP_SERVICES": {
+    "hana": [
+      {
+        "name": "sentinelgrc-hana-db",
+        "label": "hana",
+        "plan": "hdi-shared",
+        "credentials": {
+          "url":      "jdbc:sap://YOUR_HANA_HOST:443?encrypt=true&validateCertificate=true&currentschema=YOUR_SCHEMA",
+          "host":     "YOUR_HANA_HOST",
+          "port":     "443",
+          "schema":   "YOUR_SCHEMA",
+          "user":     "YOUR_HANA_USER",
+          "password": "YOUR_HANA_PASSWORD",
+          "driver":   "com.sap.db.jdbc.Driver"
+        }
+      }
+    ],
+    "xsuaa": [
+      {
+        "name": "sentinelgrc-xsuaa",
+        "label": "xsuaa",
+        "plan": "application",
+        "credentials": {
+          "xsappname":      "sentinelgrc!YOUR_TENANT_ID",
+          "tenant-mode":    "dedicated",
+          "clientid":       "sb-sentinelgrc!YOUR_TENANT_ID",
+          "clientsecret":   "YOUR_CLIENT_SECRET",
+          "url":            "https://YOUR_SUBACCOUNT.authentication.eu20.hana.ondemand.com",
+          "identityzone":   "YOUR_SUBACCOUNT",
+          "identityzoneid": "YOUR_ZONE_ID"
+        }
+      }
+    ],
+    "destination": [
+      {
+        "name": "sentinelgrc-destination",
+        "label": "destination",
+        "plan": "lite",
+        "credentials": {
+          "clientid":     "YOUR_DEST_CLIENT_ID",
+          "clientsecret": "YOUR_DEST_CLIENT_SECRET",
+          "uri":          "https://destination-configuration.cfapps.eu20.hana.ondemand.com",
+          "url":          "https://YOUR_SUBACCOUNT.authentication.eu20.hana.ondemand.com"
+        }
+      }
+    ]
+  }
+}

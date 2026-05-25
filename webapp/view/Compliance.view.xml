@@ -1,0 +1,272 @@
+<mvc:View
+    controllerName="sentinel.security.controller.Compliance"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:viz="sap.viz.ui5.controls"
+    xmlns:viz.feeds="sap.viz.ui5.controls.common.feeds"
+    xmlns:viz.data="sap.viz.ui5.data"
+    xmlns:core="sap.ui.core"
+    xmlns:layout="sap.ui.layout">
+
+    <Page showNavButton="false" class="sentinelPage">
+        <customHeader>
+            <Bar>
+                <contentLeft>
+                    <Title text="Patch and Baseline Compliance" level="H4"/>
+                    <ObjectStatus
+                        text="Last evaluated: 2026-05-12 14:22"
+                        state="None"
+                        class="sapUiSmallMarginBegin"/>
+                </contentLeft>
+                <contentRight>
+                    <Button
+                        text="Re-evaluate Baseline"
+                        icon="sap-icon://refresh"
+                        type="Emphasized"
+                        press=".onReevaluate"/>
+                    <Button
+                        text="Export Report"
+                        icon="sap-icon://download"
+                        press=".onExportReport"
+                        class="sapUiSmallMarginBegin"/>
+                </contentRight>
+            </Bar>
+        </customHeader>
+
+        <content>
+            <VBox class="sapUiMediumMargin">
+
+                <!-- KPI Row -->
+                <HBox wrap="Wrap" class="sapUiSmallMarginBottom">
+                    <GenericTile header="Compliance Score" subheader="0-100 weighted baseline"
+                        frameType="TwoByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent>
+                            <TileContent unit="%" footer="↑ +2% vs last evaluation">
+                                <content>
+                                    <NumericContent value="82" indicator="Up" valueColor="Good" withMargin="false"/>
+                                </content>
+                            </TileContent>
+                        </tileContent>
+                    </GenericTile>
+                    <GenericTile header="Compliant" subheader="Components up to date"
+                        frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent>
+                            <TileContent>
+                                <content><NumericContent value="7" valueColor="Good" withMargin="false"/></content>
+                            </TileContent>
+                        </tileContent>
+                    </GenericTile>
+                    <GenericTile header="Outdated" subheader="Need patching"
+                        frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent>
+                            <TileContent>
+                                <content><NumericContent value="3" valueColor="Critical" withMargin="false"/></content>
+                            </TileContent>
+                        </tileContent>
+                    </GenericTile>
+                    <GenericTile header="Open CVEs" subheader="Known vulnerabilities"
+                        frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent>
+                            <TileContent>
+                                <content><NumericContent value="1" valueColor="Critical" withMargin="false"/></content>
+                            </TileContent>
+                        </tileContent>
+                    </GenericTile>
+                    <GenericTile header="Missing Notes" subheader="SAP Security Notes"
+                        frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent>
+                            <TileContent>
+                                <content><NumericContent value="19" valueColor="Critical" withMargin="false"/></content>
+                            </TileContent>
+                        </tileContent>
+                    </GenericTile>
+                </HBox>
+
+                <!-- Warning strip for critical items -->
+                <MessageStrip
+                    text="SAP_BASIS (756→757) is missing 12 security notes. WEBCUIF is affected by CVE-2024-0112. SAP_AP is missing 6 FI security patches. Immediate patching recommended."
+                    type="Warning"
+                    showIcon="true"
+                    class="sapUiSmallMarginBottom"/>
+
+                <!-- Charts Row -->
+                <layout:Grid defaultSpan="L12 M12 S12" hSpacing="1" class="sapUiSmallMarginBottom">
+                    <layout:content>
+
+                    <!-- Compliance Trend Line -->
+                    <Panel>
+                        <layoutData><layout:GridData span="L8 M8 S12"/></layoutData>
+                        <headerToolbar>
+                            <Toolbar>
+                                <Title text="Compliance Score Trend" level="H5"/>
+                                <ToolbarSpacer/>
+                                <ObjectStatus text="Last 30 scans" state="None"/>
+                                <core:HTML content="&lt;span style='display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:2px 8px;background:#fff4e0;border:1px solid #f0c060;border-radius:4px;font-size:11px;font-weight:600;color:#7a4500'&gt;Threshold: 70%&lt;/span&gt;"/>
+                            </Toolbar>
+                        </headerToolbar>
+                        <content>
+                            <viz:VizFrame
+                                id="complianceTrendViz"
+                                vizType="line"
+                                uiConfig="{applicationSet:'fiori'}"
+                                height="240px"
+                                width="100%">
+                                <viz:dataset>
+                                    <viz.data:FlattenedDataset data="{compliance>/trend}">
+                                        <viz.data:dimensions>
+                                            <viz.data:DimensionDefinition name="Scan" value="{compliance>scan}"/>
+                                        </viz.data:dimensions>
+                                        <viz.data:measures>
+                                            <viz.data:MeasureDefinition name="Compliance %" value="{compliance>score}"/>
+                                        </viz.data:measures>
+                                    </viz.data:FlattenedDataset>
+                                </viz:dataset>
+                                <viz:feeds>
+                                    <viz.feeds:FeedItem uid="valueAxis"    type="Measure"   values="Compliance %"/>
+                                    <viz.feeds:FeedItem uid="categoryAxis" type="Dimension" values="Scan"/>
+                                </viz:feeds>
+                                <viz:dependents>
+                                    <viz:Popover id="complianceTrendPopover"/>
+                                </viz:dependents>
+                            </viz:VizFrame>
+                        </content>
+                    </Panel>
+
+                    <!-- Component Status Donut -->
+                    <Panel>
+                        <layoutData><layout:GridData span="L4 M4 S12"/></layoutData>
+                        <headerToolbar>
+                            <Toolbar>
+                                <Title text="Component Status" level="H5"/>
+                            </Toolbar>
+                        </headerToolbar>
+                        <content>
+                            <viz:VizFrame
+                                id="complianceDonutViz"
+                                vizType="donut"
+                                uiConfig="{applicationSet:'fiori'}"
+                                height="240px"
+                                width="100%">
+                                <viz:dataset>
+                                    <viz.data:FlattenedDataset data="{compliance>/statusBreakdown}">
+                                        <viz.data:dimensions>
+                                            <viz.data:DimensionDefinition name="Status" value="{compliance>status}"/>
+                                        </viz.data:dimensions>
+                                        <viz.data:measures>
+                                            <viz.data:MeasureDefinition name="Components" value="{compliance>count}"/>
+                                        </viz.data:measures>
+                                    </viz.data:FlattenedDataset>
+                                </viz:dataset>
+                                <viz:feeds>
+                                    <viz.feeds:FeedItem uid="size"  type="Measure"   values="Components"/>
+                                    <viz.feeds:FeedItem uid="color" type="Dimension" values="Status"/>
+                                </viz:feeds>
+                                <viz:dependents>
+                                    <viz:Popover id="complianceDonutPopover"/>
+                                </viz:dependents>
+                            </viz:VizFrame>
+                        </content>
+                    </Panel>
+
+                    </layout:content>
+                </layout:Grid>
+
+                <!-- SAP Security Notes -->
+                <Panel headerText="Missing SAP Security Notes" expandable="true" expanded="true" class="sapUiSmallMarginBottom">
+                    <headerToolbar>
+                        <Toolbar>
+                            <Title text="Missing SAP Security Notes" level="H5"/>
+                            <ObjectStatus text="3 outdated components" state="Warning" class="sapUiSmallMarginBegin"/>
+                            <ToolbarSpacer/>
+                            <Button text="Open SAP Launchpad" icon="sap-icon://action" type="Transparent" press=".onOpenSAPNotes"/>
+                        </Toolbar>
+                    </headerToolbar>
+                    <content>
+                        <Table items="{compliance>/securityNotes}" mode="None" sticky="ColumnHeaders">
+                            <columns>
+                                <Column width="8rem"><Text text="Note #"/></Column>
+                                <Column width="9rem"><Text text="Component"/></Column>
+                                <Column width="7rem"><Text text="Priority"/></Column>
+                                <Column width="7rem"><Text text="Category"/></Column>
+                                <Column><Text text="Description"/></Column>
+                                <Column width="8rem"><Text text="Release Date"/></Column>
+                                <Column width="7rem"><Text text="Status"/></Column>
+                            </columns>
+                            <items>
+                                <ColumnListItem
+                                    highlight="{path: 'compliance>priority', formatter: '.formatter.rowHighlight'}"
+                                    type="Active"
+                                    press=".onNotePress">
+                                    <cells>
+                                        <Link text="{compliance>noteId}" press=".onNotePress" class="sentinelMono"/>
+                                        <Text text="{compliance>component}" class="sentinelMono"/>
+                                        <ObjectStatus
+                                            text="{compliance>priority}"
+                                            state="{path: 'compliance>priority', formatter: '.formatter.severityState'}"/>
+                                        <Text text="{compliance>category}"/>
+                                        <Text text="{compliance>description}" wrapping="false"/>
+                                        <Text text="{compliance>releaseDate}" class="sentinelMono"/>
+                                        <ObjectStatus
+                                            text="Missing"
+                                            state="Error"
+                                            icon="sap-icon://alert"/>
+                                    </cells>
+                                </ColumnListItem>
+                            </items>
+                        </Table>
+                    </content>
+                </Panel>
+
+                <!-- Component version table -->
+                <Panel headerText="SAP Component Versions (CVERS)">
+                    <headerToolbar>
+                        <Toolbar>
+                            <Title text="SAP Component Versions (CVERS)" level="H5"/>
+                            <ToolbarSpacer/>
+                            <Button text="Re-extract CVERS" icon="sap-icon://refresh" press=".onReevaluate" type="Transparent"/>
+                        </Toolbar>
+                    </headerToolbar>
+                    <content>
+                        <Table items="{compliance>/components}" mode="None" sticky="ColumnHeaders">
+                            <columns>
+                                <Column width="12rem"><Text text="Component"/></Column>
+                                <Column width="9rem"> <Text text="Installed"/></Column>
+                                <Column width="9rem"> <Text text="Required"/></Column>
+                                <Column width="6rem"> <Text text="Delta"/></Column>
+                                <Column width="8rem"> <Text text="Status"/></Column>
+                                <Column>              <Text text="Risk Note"/></Column>
+                                <Column width="8rem"> <Text text="Action"/></Column>
+                            </columns>
+                            <items>
+                                <ColumnListItem
+                                    highlight="{= ${compliance>status} === 'Outdated' ? 'Warning' : 'Success'}">
+                                    <cells>
+                                        <ObjectIdentifier title="{compliance>name}" class="sentinelMono"/>
+                                        <Text text="{compliance>current}" class="sentinelMono"/>
+                                        <Text text="{compliance>required}" class="sentinelMono"/>
+                                        <ObjectNumber
+                                            number="{compliance>delta}"
+                                            state="{= ${compliance>delta} > 0 ? 'Error' : 'Success'}"
+                                            unit="patches"/>
+                                        <ObjectStatus
+                                            text="{compliance>status}"
+                                            state="{= ${compliance>status} === 'Outdated' ? 'Warning' : 'Success'}"
+                                            icon="{= ${compliance>status} === 'Outdated' ? 'sap-icon://alert' : 'sap-icon://accept'}"/>
+                                        <Text text="{compliance>risk}"/>
+                                        <Button
+                                            visible="{= ${compliance>status} === 'Outdated'}"
+                                            text="Schedule Patch"
+                                            icon="sap-icon://appointment-2"
+                                            type="Transparent"
+                                            press=".onSchedulePatch"/>
+                                    </cells>
+                                </ColumnListItem>
+                            </items>
+                        </Table>
+                    </content>
+                </Panel>
+
+            </VBox>
+        </content>
+    </Page>
+</mvc:View>

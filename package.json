@@ -1,0 +1,44 @@
+{
+  "name": "sentinelgrc",
+  "version": "1.0.0",
+  "description": "SentinelGRC – SAP GRC Security Platform on SAP BTP",
+  "dependencies": {
+    "@cap-js/hana": "^2",
+    "@sap/cds": "^9",
+    "@sap/xssec": "^4.13.0",
+    "axios": "^1.7.0",
+    "dotenv": "^16.0.0",
+    "express": "^4"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^2",
+    "@sap/cds-dk": "^9",
+    "@sap/ux-ui5-tooling": "^1.20.4",
+    "@ui5/cli": "^4.0.53"
+  },
+  "scripts": {
+    "start": "cds-serve",
+    "dev":   "cds watch --profile hybrid",
+    "build": "cds build --production"
+  },
+  "private": true,
+  "cds": {
+    "requires": {
+      "auth": {
+        "[hybrid]":     { "kind": "xsuaa" },
+        "[production]": { "kind": "xsuaa" }
+      },
+      "db": {
+        "[production]": { "kind": "hana" },
+        "[hybrid]":     { "kind": "hana-cloud" }
+      },
+      "S4HANA_ON_PREM": {
+        "kind": "odata",
+        "credentials": {
+          "destination": "S4HANA_ON_PREM",
+          "path": "/sap/opu/odata/sap"
+        }
+      }
+    }
+  }
+}

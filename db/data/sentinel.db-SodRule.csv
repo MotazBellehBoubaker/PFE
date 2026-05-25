@@ -1,0 +1,21 @@
+ID,ruleCode,roleA,roleB,riskLevel,riskDescription,category,active
+550e8400-e29b-41d4-a716-446655440001,SOD-001,Z_PAYM_APPROVE,Z_PAYM_RUN,High,Payment approval and execution by same user - fraud risk,Finance,true
+550e8400-e29b-41d4-a716-446655440002,SOD-002,Z_PO_CREATE,Z_PO_APPROVE,High,Purchase order creation and approval - procurement fraud,Procurement,true
+550e8400-e29b-41d4-a716-446655440003,SOD-003,Z_GL_POST,Z_GL_APPROVE,High,GL posting and approval by same user - financial manipulation,Finance,true
+550e8400-e29b-41d4-a716-446655440004,SOD-004,Z_VENDOR_CREATE,Z_PAYM_RUN,High,Vendor creation and payment execution - fictitious vendor fraud,Finance,true
+550e8400-e29b-41d4-a716-446655440005,SOD-005,Z_USER_CREATE,Z_ROLE_ASSIGN,High,User creation and role assignment - privilege escalation,Basis,true
+550e8400-e29b-41d4-a716-446655440006,SOD-006,Z_PO_APPROVE,Z_INVOICE_POST,High,PO approval and invoice posting - three-way match bypass,Procurement,true
+550e8400-e29b-41d4-a716-446655440007,SOD-007,Z_ASSET_CREATE,Z_ASSET_RETIRE,Medium,Asset creation and retirement - asset manipulation,Finance,true
+550e8400-e29b-41d4-a716-446655440008,SOD-008,Z_BANK_MAINT,Z_PAYM_RUN,High,Bank master data maintenance and payment execution,Finance,true
+550e8400-e29b-41d4-a716-446655440009,SOD-009,Z_FF_FINANCE,Z_PAYM_APPROVE,High,Firefighter finance access and payment approval,EAM,true
+550e8400-e29b-41d4-a716-446655440010,SOD-010,Z_COST_POST,Z_COST_APPROVE,Medium,Cost posting and approval - cost center manipulation,Controlling,true
+550e8400-e29b-41d4-a716-446655440011,SOD-011,Z_HR_MAINT,Z_PAYROLL_RUN,High,HR master data and payroll execution - ghost employee fraud,HR,true
+550e8400-e29b-41d4-a716-446655440012,SOD-012,Z_TAX_CONFIG,Z_TAX_POST,Medium,Tax configuration and tax document posting,Finance,true
+550e8400-e29b-41d4-a716-446655440013,SOD-013,Z_PRICE_MAINT,Z_PO_CREATE,Medium,Price condition maintenance and PO creation - price manipulation,Procurement,true
+550e8400-e29b-41d4-a716-446655440014,SOD-014,Z_TRANSPORT_REL,Z_TRANSPORT_IMP,High,Transport release and import in same system - change management bypass,Basis,true
+550e8400-e29b-41d4-a716-446655440015,SOD-015,Z_BASIS_ADMIN,Z_AUDIT_LOG,High,Basis admin rights and audit log administration - audit trail manipulation,Basis,true
+550e8400-e29b-41d4-a716-446655440016,SOD-016,Z_CUST_CREATE,Z_BILLING_POST,Medium,Customer master creation and billing document posting,SD,true
+550e8400-e29b-41d4-a716-446655440017,SOD-017,Z_STOCK_POST,Z_STOCK_APPROVE,Medium,Stock posting and approval - inventory manipulation,MM,true
+550e8400-e29b-41d4-a716-446655440018,SOD-018,Z_CONTRACT_CREATE,Z_CONTRACT_APPROVE,High,Contract creation and approval - contract fraud,Procurement,true
+550e8400-e29b-41d4-a716-446655440019,SOD-019,Z_BUDGET_CREATE,Z_BUDGET_APPROVE,Medium,Budget creation and approval - budget manipulation,Controlling,true
+550e8400-e29b-41d4-a716-446655440020,SOD-020,Z_ROLE_ASSIGN,Z_AUTH_TRACE,High,Role assignment and authorization trace - evidence tampering,Basis,true

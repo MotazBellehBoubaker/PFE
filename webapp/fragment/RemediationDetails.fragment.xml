@@ -1,0 +1,55 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+
+    <ResponsivePopover
+        id="detailsPopover"
+        title="{remCal>title}"
+        class="sapUiContentPadding"
+        placement="Auto">
+        <beginButton>
+            <Button text="Edit" type="Emphasized" press=".handleEditButton"/>
+        </beginButton>
+        <endButton>
+            <Button text="Delete" type="Reject" press=".handleDeleteAppointment"/>
+        </endButton>
+        <VBox class="sapUiSmallMargin" width="300px">
+            <HBox class="sapUiSmallMarginBottom">
+                <ObjectStatus
+                    text="{remCal>priority}"
+                    state="{path: 'remCal>priority', formatter: '.formatter.severityState'}"
+                    class="sapUiSmallMarginEnd"/>
+                <ObjectStatus
+                    text="{remCal>status}"
+                    state="{path: 'remCal>status', formatter: '.formatStatusState'}"/>
+            </HBox>
+            <HBox class="sapUiTinyMarginBottom">
+                <Label text="Violation:" width="110px"/>
+                <Text text="{remCal>violationId}" class="sentinelMono"/>
+            </HBox>
+            <HBox class="sapUiTinyMarginBottom">
+                <Label text="User:" width="110px"/>
+                <Text text="{remCal>userName}"/>
+            </HBox>
+            <HBox class="sapUiTinyMarginBottom">
+                <Label text="Remove:" width="110px"/>
+                <Text text="{remCal>roleToRemove}" class="sentinelMono"/>
+            </HBox>
+            <HBox class="sapUiTinyMarginBottom">
+                <Label text="Notes:" width="110px"/>
+                <Text text="{remCal>info}" wrapping="true"/>
+            </HBox>
+            <HBox class="sapUiTinyMarginBottom">
+                <Label text="From:" width="110px"/>
+                <Text text="{path: 'remCal>start', formatter: '.formatDate'}" class="sentinelMono"/>
+            </HBox>
+            <HBox class="sapUiTinyMarginBottom">
+                <Label text="To:" width="110px"/>
+                <Text text="{path: 'remCal>end', formatter: '.formatDate'}" class="sentinelMono"/>
+            </HBox>
+            <Button text="Mark as Done" icon="sap-icon://accept" width="100%"
+                class="sapUiSmallMarginTop" type="Accept" press=".handleMarkDone"/>
+        </VBox>
+    </ResponsivePopover>
+
+</core:FragmentDefinition>

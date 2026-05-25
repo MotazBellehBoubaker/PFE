@@ -1,0 +1,52 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:f="sap.ui.layout.form">
+
+    <Dialog
+        id="ruleEditorDialog"
+        title="{= ${editor>/rule/id} === 'NEW' ? 'New SoD Rule' : 'Edit Rule ' + ${editor>/rule/id} }"
+        contentWidth="480px">
+
+        <content>
+            <f:SimpleForm
+                layout="ResponsiveGridLayout"
+                columnsL="1"
+                columnsM="1"
+                class="sapUiSmallMargin">
+                <f:content>
+                    <Label text="Role A (conflicting)" required="true"/>
+                    <Input value="{editor>/rule/roleA}" placeholder="e.g. Z_VEND_CREATE"/>
+
+                    <Label text="Role B (conflicting)" required="true"/>
+                    <Input value="{editor>/rule/roleB}" placeholder="e.g. Z_PAYM_APPROVE"/>
+
+                    <Label text="Severity" required="true"/>
+                    <Select selectedKey="{editor>/rule/severity}">
+                        <items>
+                            <core:Item key="High"   text="High"/>
+                            <core:Item key="Medium" text="Medium"/>
+                            <core:Item key="Low"    text="Low"/>
+                        </items>
+                    </Select>
+
+                    <Label text="Business Risk Description" required="true"/>
+                    <TextArea
+                        value="{editor>/rule/risk}"
+                        placeholder="Describe the business risk when both roles are assigned to the same user"
+                        rows="3"
+                        growing="false"/>
+
+                    <Label text="Active"/>
+                    <Switch state="{editor>/rule/enabled}"/>
+                </f:content>
+            </f:SimpleForm>
+        </content>
+
+        <buttons>
+            <Button text="Save"   type="Emphasized" press=".onSaveRule"/>
+            <Button text="Cancel"                   press=".onCancelRule"/>
+        </buttons>
+    </Dialog>
+
+</core:FragmentDefinition>

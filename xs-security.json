@@ -1,0 +1,47 @@
+{
+  "xsappname": "sentinelgrc",
+  "tenant-mode": "dedicated",
+  "oauth2-configuration": {
+    "redirect-uris": [
+      "https://*.applicationstudio.cloud.sap/**",
+      "https://*.hana.ondemand.com/**",
+      "https://*.cfapps.eu20-001.hana.ondemand.com/**",
+      "http://localhost:5001/**",
+      "https://*.eu20.applicationstudio.cloud.sap/**"
+    ]
+  },
+  "scopes": [
+    { "name": "$XSAPPNAME.SecurityAnalyst", "description": "Read violations, run scans, view reports" },
+    { "name": "$XSAPPNAME.BasisAdmin",      "description": "Execute remediations, manage roles" },
+    { "name": "$XSAPPNAME.CISO",            "description": "Full read access, executive reports" },
+    { "name": "$XSAPPNAME.Admin",           "description": "Full admin access — all operations" }
+  ],
+  "role-templates": [
+    { "name": "SecurityAnalyst", "scope-references": ["$XSAPPNAME.SecurityAnalyst"] },
+    { "name": "BasisAdmin",      "scope-references": ["$XSAPPNAME.BasisAdmin"] },
+    { "name": "CISO",            "scope-references": ["$XSAPPNAME.CISO"] },
+    { "name": "Admin",           "scope-references": ["$XSAPPNAME.Admin"] }
+  ],
+  "role-collections": [
+    {
+      "name": "SentinelGRC_SecurityAnalyst",
+      "description": "SentinelGRC Security Analyst",
+      "role-template-references": ["$XSAPPNAME.SecurityAnalyst"]
+    },
+    {
+      "name": "SentinelGRC_BasisAdmin",
+      "description": "SentinelGRC Basis Administrator",
+      "role-template-references": ["$XSAPPNAME.BasisAdmin"]
+    },
+    {
+      "name": "SentinelGRC_CISO",
+      "description": "SentinelGRC CISO / Executive",
+      "role-template-references": ["$XSAPPNAME.CISO"]
+    },
+    {
+      "name": "SentinelGRC_Admin",
+      "description": "SentinelGRC Full Administrator",
+      "role-template-references": ["$XSAPPNAME.Admin"]
+    }
+  ]
+}

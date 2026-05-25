@@ -1,0 +1,59 @@
+{
+  "scans": [
+    { "id": "SC-2026-001", "scanDate": "Apr 17", "riskScore": 85, "violations": 22, "compliance": 72, "users": 4180, "started": "2026-04-17 06:00", "duration": "2m 44s", "trigger": "Manual",    "high": 9, "medium": 10, "low": 3, "status": "Complete" },
+    { "id": "SC-2026-002", "scanDate": "Apr 18", "riskScore": 83, "violations": 21, "compliance": 73, "users": 4182, "started": "2026-04-18 06:00", "duration": "2m 38s", "trigger": "Scheduled", "high": 9, "medium": 9,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-003", "scanDate": "Apr 19", "riskScore": 84, "violations": 22, "compliance": 73, "users": 4183, "started": "2026-04-19 06:00", "duration": "2m 41s", "trigger": "Scheduled", "high": 9, "medium": 10, "low": 3, "status": "Complete" },
+    { "id": "SC-2026-004", "scanDate": "Apr 20", "riskScore": 82, "violations": 20, "compliance": 74, "users": 4185, "started": "2026-04-20 06:00", "duration": "2m 29s", "trigger": "Scheduled", "high": 8, "medium": 9,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-005", "scanDate": "Apr 21", "riskScore": 81, "violations": 20, "compliance": 75, "users": 4188, "started": "2026-04-21 06:00", "duration": "2m 33s", "trigger": "Scheduled", "high": 8, "medium": 9,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-006", "scanDate": "Apr 22", "riskScore": 80, "violations": 19, "compliance": 75, "users": 4190, "started": "2026-04-22 06:00", "duration": "2m 28s", "trigger": "Scheduled", "high": 8, "medium": 8,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-007", "scanDate": "Apr 23", "riskScore": 79, "violations": 19, "compliance": 76, "users": 4192, "started": "2026-04-23 06:00", "duration": "2m 31s", "trigger": "Scheduled", "high": 7, "medium": 9,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-008", "scanDate": "Apr 24", "riskScore": 81, "violations": 20, "compliance": 76, "users": 4194, "started": "2026-04-24 06:00", "duration": "2m 35s", "trigger": "Scheduled", "high": 8, "medium": 9,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-009", "scanDate": "Apr 25", "riskScore": 79, "violations": 19, "compliance": 77, "users": 4196, "started": "2026-04-25 06:00", "duration": "2m 27s", "trigger": "Scheduled", "high": 7, "medium": 9,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-010", "scanDate": "Apr 26", "riskScore": 78, "violations": 18, "compliance": 77, "users": 4198, "started": "2026-04-26 06:00", "duration": "2m 24s", "trigger": "Scheduled", "high": 7, "medium": 8,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-011", "scanDate": "Apr 27", "riskScore": 77, "violations": 18, "compliance": 78, "users": 4200, "started": "2026-04-27 06:00", "duration": "2m 22s", "trigger": "Scheduled", "high": 7, "medium": 8,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-012", "scanDate": "Apr 28", "riskScore": 76, "violations": 17, "compliance": 78, "users": 4202, "started": "2026-04-28 06:00", "duration": "2m 21s", "trigger": "Scheduled", "high": 7, "medium": 7,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-013", "scanDate": "Apr 29", "riskScore": 78, "violations": 18, "compliance": 79, "users": 4204, "started": "2026-04-29 06:00", "duration": "2m 26s", "trigger": "Scheduled", "high": 7, "medium": 8,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-014", "scanDate": "Apr 30", "riskScore": 77, "violations": 17, "compliance": 79, "users": 4206, "started": "2026-04-30 06:00", "duration": "2m 23s", "trigger": "Scheduled", "high": 6, "medium": 8,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-015", "scanDate": "May 01", "riskScore": 76, "violations": 17, "compliance": 79, "users": 4207, "started": "2026-05-01 06:00", "duration": "2m 20s", "trigger": "Scheduled", "high": 6, "medium": 8,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-016", "scanDate": "May 02", "riskScore": 75, "violations": 16, "compliance": 80, "users": 4208, "started": "2026-05-02 06:00", "duration": "2m 18s", "trigger": "Scheduled", "high": 6, "medium": 7,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-017", "scanDate": "May 03", "riskScore": 74, "violations": 15, "compliance": 80, "users": 4209, "started": "2026-05-03 06:00", "duration": "2m 16s", "trigger": "Scheduled", "high": 5, "medium": 7,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-018", "scanDate": "May 04", "riskScore": 76, "violations": 16, "compliance": 80, "users": 4210, "started": "2026-05-04 06:00", "duration": "2m 20s", "trigger": "Scheduled", "high": 6, "medium": 7,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-019", "scanDate": "May 05", "riskScore": 75, "violations": 16, "compliance": 81, "users": 4211, "started": "2026-05-05 06:00", "duration": "2m 18s", "trigger": "Scheduled", "high": 6, "medium": 7,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-020", "scanDate": "May 06", "riskScore": 74, "violations": 15, "compliance": 81, "users": 4212, "started": "2026-05-06 06:00", "duration": "2m 15s", "trigger": "Manual",    "high": 5, "medium": 7,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-021", "scanDate": "May 07", "riskScore": 73, "violations": 15, "compliance": 81, "users": 4213, "started": "2026-05-07 06:00", "duration": "2m 14s", "trigger": "Scheduled", "high": 5, "medium": 7,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-022", "scanDate": "May 08", "riskScore": 72, "violations": 14, "compliance": 82, "users": 4213, "started": "2026-05-08 06:00", "duration": "2m 12s", "trigger": "Scheduled", "high": 5, "medium": 6,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-023", "scanDate": "May 09", "riskScore": 74, "violations": 15, "compliance": 81, "users": 4214, "started": "2026-05-09 06:00", "duration": "2m 15s", "trigger": "Scheduled", "high": 5, "medium": 7,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-024", "scanDate": "May 10", "riskScore": 73, "violations": 14, "compliance": 82, "users": 4214, "started": "2026-05-10 14:22", "duration": "2m 34s", "trigger": "Scheduled", "high": 5, "medium": 6,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-025", "scanDate": "May 11", "riskScore": 72, "violations": 14, "compliance": 82, "users": 4215, "started": "2026-05-11 08:22", "duration": "2m 21s", "trigger": "Scheduled", "high": 4, "medium": 7,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-026", "scanDate": "May 11", "riskScore": 74, "violations": 15, "compliance": 81, "users": 4215, "started": "2026-05-11 14:22", "duration": "2m 19s", "trigger": "Scheduled", "high": 5, "medium": 7,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-027", "scanDate": "May 11", "riskScore": 76, "violations": 16, "compliance": 80, "users": 4215, "started": "2026-05-11 20:22", "duration": "2m 44s", "trigger": "Manual",    "high": 6, "medium": 7,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-028", "scanDate": "May 12", "riskScore": 72, "violations": 14, "compliance": 78, "users": 4216, "started": "2026-05-12 02:22", "duration": "2m 38s", "trigger": "Scheduled", "high": 5, "medium": 6,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-029", "scanDate": "May 12", "riskScore": 74, "violations": 15, "compliance": 79, "users": 4216, "started": "2026-05-12 08:22", "duration": "2m 28s", "trigger": "Scheduled", "high": 5, "medium": 7,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-030", "scanDate": "May 12", "riskScore": 74, "violations": 15, "compliance": 80, "users": 4216, "started": "2026-05-12 08:22", "duration": "2m 28s", "trigger": "Scheduled", "high": 5, "medium": 7,  "low": 3, "status": "Complete" },
+    { "id": "SC-2026-031", "scanDate": "May 12", "riskScore": 78, "violations": 18, "compliance": 82, "users": 4218, "started": "2026-05-12 14:22", "duration": "2m 31s", "trigger": "Scheduled", "high": 7, "medium": 8,  "low": 3, "status": "Complete" }
+  ],
+  "severityBreakdown": [
+    { "severity": "High",   "count": 7  },
+    { "severity": "Medium", "count": 8  },
+    { "severity": "Low",    "count": 3  }
+  ],
+  "complianceBreakdown": [
+    { "status": "Compliant", "count": 7 },
+    { "status": "Outdated",  "count": 3 }
+  ],
+  "pipeline": {
+    "commit": "a3f8c21",
+    "message": "Add SoD engine v2.1",
+    "author": "m.reinholt",
+    "startedAt": "14:18",
+    "duration": "2m 31s",
+    "status": "Passed",
+    "stages": [
+      { "name": "Lint",   "duration": "18s", "status": "passed" },
+      { "name": "Test",   "duration": "44s", "status": "passed" },
+      { "name": "Build",  "duration": "52s", "status": "passed" },
+      { "name": "Deploy", "duration": "37s", "status": "passed" }
+    ],
+    "transport": { "dev": "passed", "test": "pending", "prod": "waiting" }
+  }
+}

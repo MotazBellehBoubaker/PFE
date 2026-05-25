@@ -1,0 +1,256 @@
+{
+  "_version": "1.58.0",
+  "sap.app": {
+    "id": "sentinel.security",
+    "type": "application",
+    "title": "SentinelGRC \u2013 SAP GRC Security Platform",
+    "description": "Cloud-native SAP GRC security analysis and remediation platform",
+    "applicationVersion": {
+      "version": "1.0.0"
+    },
+    "dataSources": {
+      "violations": {
+        "uri": "model/mockdata/violations.json",
+        "type": "JSON"
+      },
+      "users": {
+        "uri": "model/mockdata/users.json",
+        "type": "JSON"
+      },
+      "scans": {
+        "uri": "model/mockdata/scans.json",
+        "type": "JSON"
+      },
+      "rules": {
+        "uri": "model/mockdata/rules.json",
+        "type": "JSON"
+      },
+      "alerts": {
+        "uri": "model/mockdata/alerts.json",
+        "type": "JSON"
+      },
+      "criticalRoles": {
+        "uri": "model/mockdata/criticalRoles.json",
+        "type": "JSON"
+      },
+      "compliance": {
+        "uri": "model/mockdata/compliance.json",
+        "type": "JSON"
+      },
+      "remediations": {
+        "uri": "model/mockdata/remediations.json",
+        "type": "JSON"
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": false,
+      "phone": false
+    }
+  },
+  "sap.ui5": {
+    "rootView": {
+      "viewName": "sentinel.security.view.App",
+      "type": "XML",
+      "async": true,
+      "id": "appView"
+    },
+    "dependencies": {
+      "minUI5Version": "1.120.0",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.ui.layout": {},
+        "sap.ui.table": {},
+        "sap.f": {},
+        "sap.tnt": {},
+        "sap.viz": {},
+        "sap.ui.unified": {}
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": false
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "sentinel.security.i18n.i18n"
+        }
+      },
+      "violations": {
+        "type": "sap.ui.model.json.JSONModel",
+        "dataSource": "violations"
+      },
+      "users": {
+        "type": "sap.ui.model.json.JSONModel",
+        "dataSource": "users"
+      },
+      "scans": {
+        "type": "sap.ui.model.json.JSONModel",
+        "dataSource": "scans"
+      },
+      "rules": {
+        "type": "sap.ui.model.json.JSONModel",
+        "dataSource": "rules"
+      },
+      "alerts": {
+        "type": "sap.ui.model.json.JSONModel",
+        "dataSource": "alerts"
+      },
+      "criticalRoles": {
+        "type": "sap.ui.model.json.JSONModel",
+        "dataSource": "criticalRoles"
+      },
+      "compliance": {
+        "type": "sap.ui.model.json.JSONModel",
+        "dataSource": "compliance"
+      },
+      "appState": {
+        "type": "sap.ui.model.json.JSONModel",
+        "settings": {
+          "data": {
+            "scanning": false,
+            "scanProgress": 0,
+            "copilotOpen": false,
+            "copilotMessages": [],
+            "copilotLoading": false,
+            "selectedViolationId": null,
+            "execSummary": null,
+            "execSummaryLoading": false,
+            "triageInsights": null,
+            "triageLoading": false
+          }
+        }
+      },
+      "remediations": {
+        "type": "sap.ui.model.json.JSONModel",
+        "dataSource": "remediations"
+      }
+    },
+    "routing": {
+      "config": {
+        "routerClass": "sap.m.routing.Router",
+        "viewType": "XML",
+        "viewPath": "sentinel.security.view",
+        "controlId": "appPages",
+        "controlAggregation": "pages",
+        "async": true
+      },
+      "routes": [
+        {
+          "name": "overview",
+          "pattern": "",
+          "target": "overview"
+        },
+        {
+          "name": "violations",
+          "pattern": "violations",
+          "target": "violations"
+        },
+        {
+          "name": "users",
+          "pattern": "users",
+          "target": "users"
+        },
+        {
+          "name": "userDetail",
+          "pattern": "users/{userId}",
+          "target": "userDetail"
+        },
+        {
+          "name": "critical",
+          "pattern": "critical-roles",
+          "target": "critical"
+        },
+        {
+          "name": "compliance",
+          "pattern": "compliance",
+          "target": "compliance"
+        },
+        {
+          "name": "rules",
+          "pattern": "rules",
+          "target": "rules"
+        },
+        {
+          "name": "scans",
+          "pattern": "scans",
+          "target": "scans"
+        },
+        {
+          "name": "alerts",
+          "pattern": "alerts",
+          "target": "alerts"
+        },
+        {
+          "name": "settings",
+          "pattern": "settings",
+          "target": "settings"
+        },
+        {
+          "name": "remediation",
+          "pattern": "remediation",
+          "target": "remediation"
+        }
+      ],
+      "targets": {
+        "overview": {
+          "viewName": "Overview",
+          "viewLevel": 1
+        },
+        "violations": {
+          "viewName": "Violations",
+          "viewLevel": 1
+        },
+        "users": {
+          "viewName": "Users",
+          "viewLevel": 1
+        },
+        "userDetail": {
+          "viewName": "UserDetail",
+          "viewLevel": 2
+        },
+        "critical": {
+          "viewName": "CriticalRoles",
+          "viewLevel": 1
+        },
+        "compliance": {
+          "viewName": "Compliance",
+          "viewLevel": 1
+        },
+        "rules": {
+          "viewName": "Rules",
+          "viewLevel": 1
+        },
+        "scans": {
+          "viewName": "Scans",
+          "viewLevel": 1
+        },
+        "alerts": {
+          "viewName": "Alerts",
+          "viewLevel": 1
+        },
+        "settings": {
+          "viewName": "Settings",
+          "viewLevel": 1
+        },
+        "remediation": {
+          "viewName": "RemediationCalendar",
+          "viewLevel": 1
+        }
+      }
+    },
+    "resources": {
+      "css": [
+        {
+          "uri": "css/style.css"
+        }
+      ]
+    }
+  }
+}

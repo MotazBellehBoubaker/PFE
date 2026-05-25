@@ -1,0 +1,92 @@
+<mvc:View
+    controllerName="sentinel.security.controller.CriticalRoles"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+
+    <Page showNavButton="false" class="sentinelPage">
+        <customHeader>
+            <Bar>
+                <contentLeft><Title text="Critical Roles &amp; Profiles" level="H4"/></contentLeft>
+                <contentRight>
+                    <Button text="Export"            icon="sap-icon://download"   press=".onExport"/>
+                    <Button text="Subscribe to Alerts" icon="sap-icon://bell"     press=".onSubscribeAlerts" type="Emphasized"/>
+                </contentRight>
+            </Bar>
+        </customHeader>
+        <content>
+            <VBox class="sapUiMediumMargin">
+
+                <!-- KPI row -->
+                <HBox wrap="Wrap" class="sapUiSmallMarginBottom">
+                    <GenericTile header="SAP_ALL Holders"   subheader="Production Basis admins"     frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content><NumericContent value="2" valueColor="Critical" withMargin="false"/></content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile header="Firefighter Roles" subheader="Active named pattern"         frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content><NumericContent value="2" valueColor="Critical" withMargin="false"/></content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile header="Wildcard (*) Auth"  subheader="On S_TCODE / P_ORGIN"       frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content><NumericContent value="2" valueColor="Critical" withMargin="false"/></content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile header="Avg Time-to-Detect" subheader="From assignment event"       frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent unit="s"><content><NumericContent value="15" valueColor="Good" withMargin="false"/></content></TileContent></tileContent>
+                    </GenericTile>
+                </HBox>
+
+                <!-- Alert strip -->
+                <MessageStrip
+                    text="2 users hold SAP_ALL in production. This grants unrestricted access to all system objects and is a critical audit finding. Immediate review required."
+                    type="Error"
+                    showIcon="true"
+                    class="sapUiSmallMarginBottom"/>
+
+                <!-- Critical roles table -->
+                <Panel>
+                    <content>
+                        <Table
+                            id="criticalRolesTable"
+                            items="{criticalRoles>/criticalRoles}"
+                            mode="None"
+                            sticky="ColumnHeaders">
+                            <columns>
+                                <Column>               <Text text="User"/>              </Column>
+                                <Column width="10rem"> <Text text="Profile / Role"/>    </Column>
+                                <Column>               <Text text="Detection Reason"/>  </Column>
+                                <Column width="7rem">  <Text text="Granted By"/>        </Column>
+                                <Column width="8rem">  <Text text="Granted On"/>        </Column>
+                                <Column width="8rem">  <Text text="Last Used"/>         </Column>
+                                <Column width="10rem"> <Text text="Action"/>            </Column>
+                            </columns>
+                            <items>
+                                <ColumnListItem>
+                                    <cells>
+                                        <HBox alignItems="Center">
+                                            <Avatar
+                                                initials="{criticalRoles>initials}"
+                                                backgroundColor="Accent6"
+                                                displaySize="XS"
+                                                class="sapUiSmallMarginEnd"/>
+                                            <Link text="{criticalRoles>userName}" press=".onUserPress"/>
+                                        </HBox>
+                                        <ObjectStatus
+                                            text="{criticalRoles>profile}"
+                                            state="{= ${criticalRoles>profile} === 'SAP_ALL' ? 'Error' : 'Warning' }"
+                                            class="sentinelMono"/>
+                                        <Text text="{criticalRoles>reason}"/>
+                                        <Text text="{criticalRoles>grantedBy}" class="sentinelMono"/>
+                                        <Text text="{criticalRoles>grantedOn}" class="sentinelMono"/>
+                                        <Text text="{criticalRoles>lastUsed}" class="sentinelMono"/>
+                                        <Button
+                                            text="Request Removal"
+                                            type="{= ${criticalRoles>profile} === 'SAP_ALL' ? 'Reject' : 'Default' }"
+                                            press=".onRequestRemoval"/>
+                                    </cells>
+                                </ColumnListItem>
+                            </items>
+                        </Table>
+                    </content>
+                </Panel>
+            </VBox>
+        </content>
+    </Page>
+</mvc:View>

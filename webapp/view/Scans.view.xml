@@ -1,0 +1,153 @@
+<mvc:View
+    controllerName="sentinel.security.controller.Scans"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:viz="sap.viz.ui5.controls"
+    xmlns:viz.feeds="sap.viz.ui5.controls.common.feeds"
+    xmlns:viz.data="sap.viz.ui5.data">
+
+    <Page showNavButton="false" class="sentinelPage">
+        <customHeader>
+            <Bar>
+                <contentLeft><Title text="Scan History" level="H4"/></contentLeft>
+                <contentRight>
+                    <Button text="Export" icon="sap-icon://download" press=".onExport"/>
+                    <Button text="Trigger Scan" icon="sap-icon://play" type="Emphasized" press=".onTriggerScan" class="sapUiSmallMarginBegin"/>
+                </contentRight>
+            </Bar>
+        </customHeader>
+        <content>
+            <VBox class="sapUiMediumMargin">
+
+                <!-- KPI row -->
+                <HBox wrap="Wrap" class="sapUiSmallMarginBottom">
+                    <GenericTile header="Total Scans" subheader="Last 30 days" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content><NumericContent value="31" valueColor="Neutral" withMargin="false"/></content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile header="Avg Duration" subheader="Per full scan" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent unit="min"><content><NumericContent value="2.4" valueColor="Good" withMargin="false"/></content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile header="Latest Risk" subheader="SC-2026-031" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content><NumericContent value="78" valueColor="Critical" withMargin="false"/></content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile header="Latest Compliance" subheader="SC-2026-031" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent unit="%"><content><NumericContent value="82" valueColor="Good" withMargin="false"/></content></TileContent></tileContent>
+                    </GenericTile>
+                </HBox>
+
+                <!-- Scan trend chart -->
+                <Panel headerText="Risk Score and Violations Trend" class="sapUiSmallMarginBottom">
+                    <content>
+                        <viz:VizFrame
+                            id="scansTrendVizFrame"
+                            vizType="line"
+                            uiConfig="{applicationSet:'fiori'}"
+                            height="220px"
+                            width="100%">
+                            <viz:dataset>
+                                <viz.data:FlattenedDataset data="{scans>/scans}">
+                                    <viz.data:dimensions>
+                                        <viz.data:DimensionDefinition name="Scan Date" value="{scans>scanDate}"/>
+                                    </viz.data:dimensions>
+                                    <viz.data:measures>
+                                        <viz.data:MeasureDefinition name="Risk Score" value="{scans>riskScore}"/>
+                                        <viz.data:MeasureDefinition name="Violations" value="{scans>violations}"/>
+                                    </viz.data:measures>
+                                </viz.data:FlattenedDataset>
+                            </viz:dataset>
+                            <viz:feeds>
+                                <viz.feeds:FeedItem id="scansTrendValueAxis"    uid="valueAxis"    type="Measure"    values="Risk Score,Violations"/>
+                                <viz.feeds:FeedItem id="scansTrendCategoryAxis" uid="categoryAxis" type="Dimension"  values="Scan Date"/>
+                            </viz:feeds>
+                            <viz:dependents>
+                                <viz:Popover id="scansTrendPopover"/>
+                            </viz:dependents>
+                        </viz:VizFrame>
+                    </content>
+                </Panel>
+
+                <!-- Latest CI/CD pipeline -->
+                <Panel headerText="Latest Deployment - SAP CI/CD Service" expandable="true" expanded="true" class="sapUiSmallMarginBottom">
+                    <content>
+                        <VBox class="sapUiSmallMargin">
+                            <HBox alignItems="Center" class="sapUiSmallMarginBottom">
+                                <core:Icon src="sap-icon://source-code" class="sapUiSmallMarginEnd"/>
+                                <Text text="a3f8c21" class="sentinelMono sapUiSmallMarginEnd"/>
+                                <Text text="Add SoD engine v2.1" class="sapUiSmallMarginEnd"/>
+                                <ObjectStatus text="Passed" state="Success" icon="sap-icon://accept"/>
+                            </HBox>
+                            <Text text="by m.reinholt · 14:18 · 2m 31s" class="sapUiSmallMarginBottom sapUiSmallText"/>
+                            <HBox alignItems="Center" wrap="Wrap" class="sapUiSmallMarginBottom">
+                                <Panel class="sentinelPipelineStage"><content><VBox alignItems="Center" class="sapUiSmallMargin">
+                                    <ObjectStatus text="Lint"   state="Success" icon="sap-icon://accept"/>
+                                    <Text text="18s" class="sentinelMono sapUiSmallText"/>
+                                </VBox></content></Panel>
+                                <core:Icon src="sap-icon://arrow-right" class="sapUiSmallMarginBeginEnd"/>
+                                <Panel class="sentinelPipelineStage"><content><VBox alignItems="Center" class="sapUiSmallMargin">
+                                    <ObjectStatus text="Test"   state="Success" icon="sap-icon://accept"/>
+                                    <Text text="44s" class="sentinelMono sapUiSmallText"/>
+                                </VBox></content></Panel>
+                                <core:Icon src="sap-icon://arrow-right" class="sapUiSmallMarginBeginEnd"/>
+                                <Panel class="sentinelPipelineStage"><content><VBox alignItems="Center" class="sapUiSmallMargin">
+                                    <ObjectStatus text="Build"  state="Success" icon="sap-icon://accept"/>
+                                    <Text text="52s" class="sentinelMono sapUiSmallText"/>
+                                </VBox></content></Panel>
+                                <core:Icon src="sap-icon://arrow-right" class="sapUiSmallMarginBeginEnd"/>
+                                <Panel class="sentinelPipelineStage"><content><VBox alignItems="Center" class="sapUiSmallMargin">
+                                    <ObjectStatus text="Deploy" state="Success" icon="sap-icon://accept"/>
+                                    <Text text="37s" class="sentinelMono sapUiSmallText"/>
+                                </VBox></content></Panel>
+                            </HBox>
+                            <HBox alignItems="Center" class="sapUiSmallMarginTop">
+                                <ObjectStatus text="DEV" state="Success" icon="sap-icon://accept" class="sapUiSmallMarginEnd"/>
+                                <core:Icon src="sap-icon://arrow-right" class="sapUiSmallMarginEnd"/>
+                                <ObjectStatus text="TEST - Pending approval" state="Warning" icon="sap-icon://pending" class="sapUiSmallMarginEnd"/>
+                                <core:Icon src="sap-icon://arrow-right" class="sapUiSmallMarginEnd"/>
+                                <ObjectStatus text="PROD - Waiting" state="None" icon="sap-icon://pending" class="sapUiSmallMarginEnd"/>
+                                <Button text="Promote to TEST" type="Emphasized" press=".onPromoteToTest" class="sapUiSmallMarginBegin"/>
+                            </HBox>
+                        </VBox>
+                    </content>
+                </Panel>
+
+                <!-- Scan history table -->
+                <Panel headerText="All Scans">
+                    <content>
+                        <Table items="{scans>/scans}" mode="None" sticky="ColumnHeaders" growing="true" growingThreshold="10">
+                            <columns>
+                                <Column width="9rem"><Text text="Scan ID"/></Column>
+                                <Column width="12rem"><Text text="Started"/></Column>
+                                <Column width="7rem"><Text text="Duration"/></Column>
+                                <Column><Text text="Trigger"/></Column>
+                                <Column width="6rem"><Text text="Users"/></Column>
+                                <Column width="10rem"><Text text="Violations"/></Column>
+                                <Column width="6rem"><Text text="Risk"/></Column>
+                                <Column width="10rem"><Text text="Compliance"/></Column>
+                                <Column width="7rem"><Text text="Status"/></Column>
+                            </columns>
+                            <items>
+                                <ColumnListItem>
+                                    <cells>
+                                        <ObjectIdentifier title="{scans>id}" class="sentinelMono"/>
+                                        <Text text="{scans>started}" class="sentinelMono"/>
+                                        <Text text="{scans>duration}" class="sentinelMono"/>
+                                        <Text text="{scans>trigger}"/>
+                                        <ObjectNumber number="{scans>users}"/>
+                                        <HBox>
+                                            <ObjectNumber number="{scans>violations}" emphasized="true"/>
+                                            <Text text=" ({scans>high}H {scans>medium}M {scans>low}L)" class="sapUiSmallText sapUiSmallMarginBegin"/>
+                                        </HBox>
+                                        <ObjectNumber number="{scans>risk}" emphasized="true"/>
+                                        <ProgressIndicator percentValue="{scans>compliance}" displayValue="{scans>compliance}%" width="90px" state="Success"/>
+                                        <ObjectStatus text="{scans>status}" state="Success" icon="sap-icon://accept"/>
+                                    </cells>
+                                </ColumnListItem>
+                            </items>
+                        </Table>
+                    </content>
+                </Panel>
+            </VBox>
+        </content>
+    </Page>
+</mvc:View>

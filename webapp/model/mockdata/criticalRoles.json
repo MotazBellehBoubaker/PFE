@@ -1,0 +1,8 @@
+{
+  "criticalRoles": [
+    { "userId": "BASISADM", "userName": "BASISADM",    "profile": "SAP_ALL",      "reason": "Super-profile with unrestricted access to all objects",              "grantedBy": "SYSADM",   "grantedOn": "2025-01-15", "lastUsed": "2026-05-12", "initials": "BA", "color": "#c0392b" },
+    { "userId": "MROSSI",   "userName": "Marco Rossi", "profile": "SAP_ALL",      "reason": "Super-profile — unexplained assignment to business user",            "grantedBy": "BASISADM", "grantedOn": "2026-03-28", "lastUsed": "2026-05-11", "initials": "MR", "color": "#7630ea" },
+    { "userId": "JKOWAL",   "userName": "Jan Kowalski","profile": "Z_FF_FINANCE",  "reason": "Firefighter role pattern — emergency access without time limit",     "grantedBy": "BASISADM", "grantedOn": "2026-04-10", "lastUsed": "2026-05-12", "initials": "JK", "color": "#0070f2" },
+    { "userId": "AMUELL",   "userName": "Anna Müller", "profile": "Z_WILDCARD_MM", "reason": "Wildcard (*) on S_TCODE — unrestricted transaction access",        "grantedBy": "SYSADM",   "grantedOn": "2025-11-02", "lastUsed": "2026-05-10", "initials": "AM", "color": "#e76500" }
+  ]
+}
