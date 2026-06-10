@@ -130,6 +130,14 @@ sap.ui.define([], function () {
          * @param {string} sDate
          * @returns {string}
          */
+        userInitials: function (sName) {
+            var sParts = sName.trim().split(/[_s-]/);
+            if (sParts.length >= 2) {
+                return (sParts[0][0] + sParts[1][0]).toUpperCase();
+            }
+            return sName.substring(0, 2).toUpperCase();
+        },
+
         formatDate: function (sDate) {
             try {
                 var oDate = new Date(sDate);

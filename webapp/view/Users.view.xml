@@ -20,17 +20,25 @@
 
                 <!-- KPI row -->
                 <HBox wrap="Wrap" class="sapUiSmallMarginBottom">
-                    <GenericTile header="Total Users"     subheader="Dialog · System · Service" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
-                        <tileContent><TileContent><content><NumericContent value="4218" valueColor="Neutral" withMargin="false"/></content></TileContent></tileContent>
+                    <GenericTile header="Total Users" subheader="All SAP users" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content>
+                            <NumericContent value="{usersState>/totalUsers}" valueColor="Neutral" withMargin="false"/>
+                        </content></TileContent></tileContent>
                     </GenericTile>
-                    <GenericTile header="Avg Risk Score"  subheader="vs previous scan"          frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
-                        <tileContent><TileContent><content><NumericContent value="58" indicator="Down" valueColor="Critical" withMargin="false"/></content></TileContent></tileContent>
+                    <GenericTile header="Avg Risk Score" subheader="Across all users" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content>
+                            <NumericContent value="{usersState>/avgRiskScore}" valueColor="Critical" withMargin="false"/>
+                        </content></TileContent></tileContent>
                     </GenericTile>
-                    <GenericTile header="> 10 Roles"      subheader="Excessive privilege threshold" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
-                        <tileContent><TileContent><content><NumericContent value="87" valueColor="Critical" withMargin="false"/></content></TileContent></tileContent>
+                    <GenericTile header="Locked Users" subheader="Account locked" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content>
+                            <NumericContent value="{usersState>/lockedUsers}" valueColor="Neutral" withMargin="false"/>
+                        </content></TileContent></tileContent>
                     </GenericTile>
-                    <GenericTile header="Locked / Expired" subheader="48 expired this quarter"  frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
-                        <tileContent><TileContent><content><NumericContent value="218" valueColor="Neutral" withMargin="false"/></content></TileContent></tileContent>
+                    <GenericTile header="Dialog Users" subheader="Type A accounts" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content>
+                            <NumericContent value="{usersState>/dialogUsers}" valueColor="Good" withMargin="false"/>
+                        </content></TileContent></tileContent>
                     </GenericTile>
                 </HBox>
 
@@ -40,7 +48,7 @@
                         <Toolbar>
                             <SearchField
                                 id="userSearch"
-                                placeholder="Search users…"
+                                placeholder="Search users..."
                                 width="240px"
                                 search=".onSearch"
                                 liveChange=".onSearch"/>
@@ -49,8 +57,8 @@
                             <Select id="sortSelect" change=".onSortChange">
                                 <items>
                                     <core:Item key="riskScore" text="Risk Score"/>
-                                    <core:Item key="roles"     text="Role Count"/>
-                                    <core:Item key="name"      text="Name"/>
+                                    <core:Item key="userName"  text="Name"/>
+                                    <core:Item key="userType"  text="Type"/>
                                 </items>
                             </Select>
                         </Toolbar>
@@ -58,48 +66,52 @@
                     <content>
                         <Table
                             id="usersTable"
-                            items="{path: 'users>/users', sorter: {path: 'riskScore', descending: true}}"
+                            items="{
+                                path: 'sentinelgrc>/SapUsers',
+                                parameters: {
+                                    $orderby: 'riskScore desc'
+                                }
+                            }"
                             growing="true"
-                            growingThreshold="10"
+                            growingThreshold="15"
                             mode="None"
-                            sticky="ColumnHeaders">
+                            sticky="ColumnHeaders"
+                            updateFinished=".onTableUpdateFinished">
                             <columns>
-                                <Column>               <Text text="User"/>         </Column>
-                                <Column width="7rem">  <Text text="Type"/>         </Column>
-                                <Column width="9rem">  <Text text="Department"/>   </Column>
-                                <Column width="5rem">  <Text text="Roles"/>        </Column>
-                                <Column width="14rem"> <Text text="Risk Score"/>   </Column>
-                                <Column width="7rem">  <Text text="Status"/>       </Column>
-                                <Column width="8rem">  <Text text="Last Login"/>   </Column>
+                                <Column>               <Text text="User"/>       </Column>
+                                <Column width="7rem">  <Text text="Type"/>       </Column>
+                                <Column width="9rem">  <Text text="Department"/> </Column>
+                                <Column width="14rem"> <Text text="Risk Score"/> </Column>
+                                <Column width="7rem">  <Text text="Status"/>     </Column>
+                                <Column width="10rem"> <Text text="Last Login"/> </Column>
                             </columns>
                             <items>
                                 <ColumnListItem press=".onUserPress" type="Navigation">
                                     <cells>
                                         <HBox alignItems="Center">
                                             <Avatar
-                                                initials="{users>initials}"
+                                                initials="{path: 'sentinelgrc>userName', formatter: '.formatter.userInitials'}"
                                                 backgroundColor="Accent6"
                                                 displaySize="XS"
                                                 class="sapUiSmallMarginEnd"/>
                                             <ObjectIdentifier
-                                                title="{users>name}"
-                                                text="{users>id}"
+                                                title="{sentinelgrc>userName}"
+                                                text="{sentinelgrc>userId}"
                                                 class="sentinelMono"/>
                                         </HBox>
                                         <ObjectStatus
-                                            text="{users>type}"
-                                            state="{path: 'users>type', formatter: '.formatter.userTypeState'}"/>
-                                        <Text text="{users>dept}"/>
-                                        <ObjectNumber number="{users>roles}" emphasized="true"/>
+                                            text="{sentinelgrc>userType}"
+                                            state="{path: 'sentinelgrc>userType', formatter: '.formatter.userTypeState'}"/>
+                                        <Text text="{sentinelgrc>department}"/>
                                         <ProgressIndicator
-                                            percentValue="{users>riskScore}"
-                                            displayValue="{users>riskScore}"
+                                            percentValue="{sentinelgrc>riskScore}"
+                                            displayValue="{sentinelgrc>riskScore}"
                                             width="130px"
-                                            state="{path: 'users>riskScore', formatter: '.formatter.riskScoreState'}"/>
+                                            state="{path: 'sentinelgrc>riskScore', formatter: '.formatter.riskScoreState'}"/>
                                         <ObjectStatus
-                                            text="{users>status}"
-                                            state="{= ${users>status} === 'Active' ? 'Success' : 'Warning'}"/>
-                                        <Text text="{users>lastLogin}" class="sentinelMono"/>
+                                            text="{= ${sentinelgrc>locked} ? 'Locked' : 'Active'}"
+                                            state="{= ${sentinelgrc>locked} ? 'Warning' : 'Success'}"/>
+                                        <Text text="{path: 'sentinelgrc>lastLogin', formatter: '.formatter.formatDate'}" class="sentinelMono"/>
                                     </cells>
                                 </ColumnListItem>
                             </items>
