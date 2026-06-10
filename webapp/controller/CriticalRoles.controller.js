@@ -1,37 +1,69 @@
 sap.ui.define([
-    "sentinel/security/controller/BaseController"
-], function (BaseController) {
+    "sentinel/security/controller/BaseController",
+    "sap/ui/model/json/JSONModel"
+], function (BaseController, JSONModel) {
     "use strict";
 
     return BaseController.extend("sentinel.security.controller.CriticalRoles", {
 
         onInit: function () {
             this.getRouter().getRoute("critical").attachPatternMatched(this._onRouteMatched, this);
+            this._oCritState = new JSONModel({
+                totalCount:    0,
+                sapAllCount:   0,
+                sysAdminCount: 0,
+                uniqueUsers:   0
+            });
+            this.getView().setModel(this._oCritState, "critState");
         },
 
-        _onRouteMatched: function () {},
+        _onRouteMatched: function () {
+            var oTable = this.byId("criticalRolesTable");
+            if (oTable) {
+                oTable.getBinding("items").refresh();
+            }
+        },
+
+        onTableUpdateFinished: function () {
+            var oBinding  = this.byId("criticalRolesTable").getBinding("items");
+            var aContexts = oBinding.getCurrentContexts();
+            var iTotal      = aContexts.length;
+            var iSapAll     = 0;
+            var iSysAdmin   = 0;
+            var aUsers      = new Set();
+
+            aContexts.forEach(function (oCtx) {
+                var o = oCtx.getObject();
+                aUsers.add(o.userId);
+                if (o.criticalType === "SAP_ALL")    iSapAll++;
+                if (o.criticalType === "S_A.SYSTEM") iSysAdmin++;
+            });
+
+            this._oCritState.setProperty("/totalCount",    iTotal);
+            this._oCritState.setProperty("/sapAllCount",   iSapAll);
+            this._oCritState.setProperty("/sysAdminCount", iSysAdmin);
+            this._oCritState.setProperty("/uniqueUsers",   aUsers.size);
+        },
 
         onExport: function () {
-            this.showToast("Exporting critical roles CSV…");
+            this.showToast("Exporting critical roles CSV...");
         },
 
         onSubscribeAlerts: function () {
-            this.showToast("Subscribed to critical role alerts via SAP Alert Notification");
+            this.showToast("Subscribed to critical role alerts");
         },
 
         onRequestRemoval: function (oEvent) {
-            var oCtx     = oEvent.getSource().getBindingContext("criticalRoles");
-            var sUser    = oCtx.getProperty("userName");
+            var oCtx     = oEvent.getSource().getBindingContext("sentinelgrc");
             var sUserId  = oCtx.getProperty("userId");
             var sProfile = oCtx.getProperty("profile");
 
-            // Store pending remediation context and navigate to calendar
             this.getModel("appState").setProperty("/pendingRemediation", {
                 violationId:  "CRIT-" + sUserId,
                 userId:       sUserId,
-                userName:     sUser,
+                userName:     sUserId,
                 roleToRemove: sProfile,
-                title:        "Remove " + sProfile + " from " + sUser,
+                title:        "Remove " + sProfile + " from " + sUserId,
                 priority:     "High"
             });
 
@@ -39,7 +71,8 @@ sap.ui.define([
         },
 
         onUserPress: function (oEvent) {
-            var sUserId = oEvent.getSource().getBindingContext("criticalRoles").getProperty("userId");
+            var oCtx    = oEvent.getSource().getBindingContext("sentinelgrc");
+            var sUserId = oCtx.getProperty("userId");
             this.navTo("userDetail", { userId: sUserId });
         }
     });
