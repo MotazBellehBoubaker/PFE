@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# CAP build output
+gen/
+dist/
+
+# Sensitive credentials - NEVER commit these
+default-env.json
+.cdsrc-private.json
+.env
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# BAS
+.theia/

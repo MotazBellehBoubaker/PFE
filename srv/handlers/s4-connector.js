@@ -1,141 +1,179 @@
 'use strict';
 
-const cds  = require('@sap/cds');
-const axios = require('axios');
+const http  = require('http');
+const https = require('https');
 
-// ── Destination name must match what you created in BTP cockpit ───
-const S4_DESTINATION = process.env.S4_DESTINATION_NAME || 'S4HANA_ON_PREM';
+const DESTINATION_PROXY_URL = process.env.DESTINATION_PROXY_URL || '';
+const HTTP_PROXY            = process.env.HTTP_PROXY            || '';
+const SENTINEL_SRV          = 'ZSENTINEL_SRV_SRV';
 
 // ─────────────────────────────────────────────────────────────────
-// Core HTTP call to S/4HANA OData via BTP Destination Service
+// HTTP GET via BAS proxy → Destination Service → SCC → S/4HANA
+// This is the only approach that works in BAS dev space for
+// on-premise destinations.
 // ─────────────────────────────────────────────────────────────────
-async function callS4OData(sEntity, oParams = {}) {
+function httpGetViaProxy(sFullUrl) {
+    return new Promise((resolve, reject) => {
+        // Parse proxy address
+        const oProxy   = new URL(HTTP_PROXY);
+        const proxyHost = oProxy.hostname;
+        const proxyPort = parseInt(oProxy.port, 10);
+
+        // The request goes TO the proxy, but with the full URL as path
+        const oOptions = {
+            host:    proxyHost,
+            port:    proxyPort,
+            method:  'GET',
+            path:    sFullUrl,
+            headers: {
+                'Host':   new URL(sFullUrl).host,
+                'Accept': 'application/json'
+            }
+        };
+
+        const req = http.request(oOptions, (res) => {
+            let sData = '';
+            res.on('data', chunk => sData += chunk);
+            res.on('end', () => {
+                if (res.statusCode >= 200 && res.statusCode < 300) {
+                    try {
+                        resolve(JSON.parse(sData));
+                    } catch (e) {
+                        reject(new Error(`JSON parse error: ${e.message}`));
+                    }
+                } else {
+                    reject(new Error(`HTTP ${res.statusCode}: ${sData.slice(0, 200)}`));
+                }
+            });
+        });
+
+        req.on('error', reject);
+        req.setTimeout(60000, () => {
+            req.destroy(new Error('Request timeout after 60s'));
+        });
+        req.end();
+    });
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Build the full URL through the BAS destination proxy
+// ─────────────────────────────────────────────────────────────────
+function buildUrl(sEntitySet, oParams = {}) {
+    const sBase   = `${DESTINATION_PROXY_URL}/destinations/RD1_MO`;
+    const sPath   = `/sap/opu/odata/sap/${SENTINEL_SRV}/${sEntitySet}`;
+    const sQuery  = new URLSearchParams({ ...oParams, '$format': 'json' }).toString();
+    return `${sBase}${sPath}?${sQuery}`;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Core call
+// ─────────────────────────────────────────────────────────────────
+async function callSentinelSrv(sEntitySet, oParams = {}) {
     try {
-        // In production: use cds.connect.to with the destination
-        const srv = await cds.connect.to(S4_DESTINATION);
-
-        const sUrl = `/sap/opu/odata/sap/${sEntity}`;
-        const result = await srv.get(sUrl, { params: oParams });
-        return result?.d?.results || result?.value || [];
-
+        const sUrl   = buildUrl(sEntitySet, oParams);
+        console.log(`[S4Connector] GET ${sUrl}`);
+        const oData  = await httpGetViaProxy(sUrl);
+        return oData?.d?.results || oData?.value || [];
     } catch (err) {
-        console.error(`[S4Connector] Error calling ${sEntity}:`, err.message);
-        throw new Error(`S/4HANA extraction failed for ${sEntity}: ${err.message}`);
+        console.error(`[S4Connector] Error calling ${sEntitySet}:`, err.message);
+        throw new Error(`S/4HANA extraction failed for ${sEntitySet}: ${err.message}`);
     }
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  Extract all dialog users from USR02
-//  Returns: [{ BNAME, USTYP, UFLAG, TRDAT, GLTGV, GLTGB, ANAME }]
+//  Extract users from USR02 via UserSet
 // ─────────────────────────────────────────────────────────────────
 async function extractUsers() {
-    console.log('[S4Connector] Extracting users from USR02...');
-
-    const aRaw = await callS4OData('API_USERDETAILS_SRV/A_UserDetail', {
-        $filter: "UserType eq 'A'",          // Dialog users only
-        $select: 'UserID,UserType,IsLocked,LastLogonDate,ValidFrom,ValidTo',
-        $top:    10000
-    });
-
+    console.log('[S4Connector] Extracting users from UserSet (USR02)...');
+    const aRaw = await callSentinelSrv('UserSet', { $top: 10000 });
     const aUsers = aRaw.map(u => ({
-        userId:    u.UserID     || u.BNAME,
-        userName:  u.UserName   || u.BNAME,
-        userType:  u.UserType   || u.USTYP  || 'A',
-        locked:    u.IsLocked   === true || u.UFLAG === '64' || false,
-        lastLogin: u.LastLogonDate ? new Date(u.LastLogonDate) : null,
-        validFrom: u.ValidFrom  ? new Date(u.ValidFrom) : null,
-        validTo:   u.ValidTo    ? new Date(u.ValidTo)   : null
-    }));
-
+        userId:    u.Bname,
+        userName:  u.Bname,
+        userType:  u.Ustyp  || 'A',
+        locked:    u.Uflag === '64' || false,
+        lastLogin: u.Trdat  ? parseAbapDate(u.Trdat)  : null,
+        validFrom: u.Gltgv  ? parseAbapDate(u.Gltgv)  : null,
+        validTo:   u.Gltgb  ? parseAbapDate(u.Gltgb)  : null
+    })).filter(u => u.userId && u.userId.trim());
     console.log(`[S4Connector] Extracted ${aUsers.length} users`);
     return aUsers;
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  Extract role assignments from AGR_USERS
-//  Returns: [{ UNAME, AGR_NAME, FROM_DAT, TO_DAT }]
+//  Extract role assignments from AGR_USERS via RoleAssignmentSet
 // ─────────────────────────────────────────────────────────────────
 async function extractRoleAssignments() {
-    console.log('[S4Connector] Extracting role assignments from AGR_USERS...');
-
-    const aRaw = await callS4OData('API_ROLEASSIGNMENT_SRV/A_RoleAssignment', {
-        $select: 'UserID,RoleName,ValidFrom,ValidTo',
-        $top:    50000
-    });
-
+    console.log('[S4Connector] Extracting role assignments...');
+    const aRaw = await callSentinelSrv('RoleAssignmentSet', { $top: 50000 });
     const aAssignments = aRaw.map(r => ({
-        userId:   r.UserID   || r.UNAME,
-        roleId:   r.RoleName || r.AGR_NAME,
-        fromDate: r.ValidFrom ? new Date(r.ValidFrom) : null,
-        toDate:   r.ValidTo   ? new Date(r.ValidTo)   : null
+        userId:   r.Uname,
+        roleId:   r.AgrName,
+        fromDate: r.FromDat ? parseAbapDate(r.FromDat) : null,
+        toDate:   r.ToDat   ? parseAbapDate(r.ToDat)   : null
     })).filter(r => r.userId && r.roleId);
-
     console.log(`[S4Connector] Extracted ${aAssignments.length} role assignments`);
     return aAssignments;
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  Extract critical profiles from UST04 (SAP_ALL, SAP_NEW, etc.)
-//  Returns: [{ BNAME, PROFILE }]
+//  Extract critical profiles from UST04 via ProfileSet
 // ─────────────────────────────────────────────────────────────────
 async function extractCriticalProfiles() {
-    console.log('[S4Connector] Checking for critical profiles via UST04...');
-
-    const aCriticalProfiles = ['SAP_ALL', 'SAP_NEW', 'S_A.ADMIN', 'S_A.DEVELOP'];
-
-    const aRaw = await callS4OData('API_PROFILEASSIGNMENT_SRV/A_ProfileAssignment', {
-        $filter: aCriticalProfiles.map(p => `Profile eq '${p}'`).join(' or '),
-        $select: 'UserID,Profile',
-        $top:    1000
-    });
-
-    const aResult = aRaw.map(r => ({
-        userId:      r.UserID  || r.BNAME,
-        profile:     r.Profile,
-        criticalType: r.Profile.startsWith('SAP_ALL') ? 'SAP_ALL'
-                    : r.Profile.startsWith('SAP_NEW')  ? 'SAP_NEW'
-                    : 'SUPER_PROFILE'
-    }));
-
+    console.log('[S4Connector] Extracting critical profiles...');
+    const aRaw = await callSentinelSrv('ProfileSet', { $top: 5000 });
+    const aCritical = ['SAP_ALL', 'SAP_NEW', 'S_A.ADMIN', 'S_A.DEVELOP', 'S_A.SYSTEM'];
+    const aResult = aRaw
+        .filter(r => aCritical.some(c => r.Profilename && r.Profilename.startsWith(c)))
+        .map(r => ({
+            userId:       r.Bname,
+            profile:      r.Profilename,
+            criticalType: r.Profilename.startsWith('SAP_ALL')    ? 'SAP_ALL'
+                        : r.Profilename.startsWith('SAP_NEW')    ? 'SAP_NEW'
+                        : r.Profilename.startsWith('S_A.SYSTEM') ? 'S_A.SYSTEM'
+                        : 'SUPER_PROFILE'
+        }));
     console.log(`[S4Connector] Found ${aResult.length} critical profile assignments`);
     return aResult;
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  Extract component versions from CVERS
-//  Returns: [{ COMPONENT, RELEASE, SP }]
+//  Extract component versions from CVERS via ComponentSet
 // ─────────────────────────────────────────────────────────────────
 async function extractComponentVersions() {
-    console.log('[S4Connector] Extracting component versions from CVERS...');
-
-    const aRaw = await callS4OData('API_SYSTEM_INFO_SRV/A_InstalledProductVersion', {
-        $select: 'ProductName,Release,SupportPackageLevel',
-        $top:    200
-    });
-
+    console.log('[S4Connector] Extracting component versions...');
+    const aRaw = await callSentinelSrv('ComponentSet', { $top: 500 });
     const aVersions = aRaw.map(v => ({
-        name:    v.ProductName           || v.COMPONENT,
-        current: `${v.Release}.${String(v.SupportPackageLevel || 0).padStart(4,'0')}`,
-        sp:      parseInt(v.SupportPackageLevel || 0, 10)
-    }));
-
+        name:    v.Componentname,
+        current: `${v.Release}.${String(v.Extrelease || '0000').padStart(4,'0')}`,
+        sp:      parseInt(v.Extrelease || 0, 10),
+        type:    v.CompType
+    })).filter(v => v.name && v.name.trim());
     console.log(`[S4Connector] Extracted ${aVersions.length} component versions`);
     return aVersions;
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  Detect firefighter roles from AGR_USERS (pattern-based)
+//  Detect firefighter roles (pattern-based)
 // ─────────────────────────────────────────────────────────────────
-async function extractFirefighterRoles(aRoleAssignments) {
+function extractFirefighterRoles(aRoleAssignments) {
     const aPatterns = [/FF_/i, /FIREFIGHT/i, /EMERGENCY/i, /BREAK_GLASS/i, /SUPERUSER/i];
-
     return aRoleAssignments
         .filter(r => aPatterns.some(p => p.test(r.roleId)))
         .map(r => ({
-            userId:      r.userId,
-            profile:     r.roleId,
+            userId:       r.userId,
+            profile:      r.roleId,
             criticalType: 'FIREFIGHTER'
         }));
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  Helper: parse ABAP date string YYYYMMDD to JS Date
+// ─────────────────────────────────────────────────────────────────
+function parseAbapDate(sDate) {
+    if (!sDate || sDate.trim() === '00000000' || sDate.trim() === '99991231') return null;
+    const s = sDate.toString().replace(/\D/g, '');
+    if (s.length !== 8) return null;
+    return new Date(`${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`);
 }
 
 module.exports = {

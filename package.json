@@ -4,39 +4,46 @@
   "description": "SentinelGRC – SAP GRC Security Platform on SAP BTP",
   "dependencies": {
     "@cap-js/hana": "^2",
+    "@sap-cloud-sdk/connectivity": "^4.7.0",
+    "@sap-cloud-sdk/http-client": "^4.7.0",
+    "@sap-cloud-sdk/resilience": "^4.7.0",
     "@sap/cds": "^9",
     "@sap/xssec": "^4.13.0",
-    "axios": "^1.7.0",
-    "dotenv": "^16.0.0",
+    "axios": "^1.17.0",
     "express": "^4"
   },
   "devDependencies": {
     "@cap-js/sqlite": "^2",
-    "@sap/cds-dk": "^9",
-    "@sap/ux-ui5-tooling": "^1.20.4",
-    "@ui5/cli": "^4.0.53"
+    "@sap/cds-dk": "^9"
   },
   "scripts": {
     "start": "cds-serve",
-    "dev":   "cds watch --profile hybrid",
+    "dev": "cds watch --profile hybrid",
     "build": "cds build --production"
   },
   "private": true,
   "cds": {
     "requires": {
       "auth": {
-        "[hybrid]":     { "kind": "xsuaa" },
-        "[production]": { "kind": "xsuaa" }
+        "[hybrid]": {
+          "kind": "xsuaa"
+        },
+        "[production]": {
+          "kind": "xsuaa"
+        }
       },
       "db": {
-        "[production]": { "kind": "hana" },
-        "[hybrid]":     { "kind": "hana-cloud" }
+        "[production]": {
+          "kind": "hana"
+        },
+        "[hybrid]": {
+          "kind": "hana-cloud"
+        }
       },
-      "S4HANA_ON_PREM": {
+      "RD1_MO": {
         "kind": "odata",
         "credentials": {
-          "destination": "S4HANA_ON_PREM",
-          "path": "/sap/opu/odata/sap"
+          "destination": "RD1_MO"
         }
       }
     }

@@ -42,13 +42,12 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
 
             try {
                 // 2 — Extract from S/4HANA
-                const [aUsers, aRoleAssignments, aCritProfiles, aVersions] =
-                    await Promise.all([
-                        extractUsers(),
-                        extractRoleAssignments(),
-                        extractCriticalProfiles(),
-                        extractComponentVersions()
-                    ]);
+                // Sequential extraction for SCC compatibility
+                const aUsers = await extractUsers();
+                const aRoleAssignments = await extractRoleAssignments();
+                const aCritProfiles = await extractCriticalProfiles();
+                const aVersions = await extractComponentVersions();
+
 
                 // 3 — Persist users
                 const aUserRecords = aUsers.map(u => ({
