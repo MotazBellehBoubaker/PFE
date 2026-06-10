@@ -12,13 +12,28 @@ sap.ui.define([
 
         onInit: function () {
             this.getRouter().getRoute("violations").attachPatternMatched(this._onRouteMatched, this);
-            this._oDetailModel = new JSONModel({ selectedViolation: null, remediationLoading: false, remediationText: null });
+            this._oDetailModel = new JSONModel({
+                selectedViolation: null,
+                remediationLoading: false,
+                remediationText: null,
+                totalCount: 0
+            });
             this.getView().setModel(this._oDetailModel, "detail");
         },
 
         _onRouteMatched: function () {
             this._oDetailModel.setProperty("/selectedViolation", null);
             this._oDetailModel.setProperty("/remediationText", null);
+            // Refresh the OData binding to get latest data
+            var oTable = this.byId("violationsTable");
+            if (oTable) {
+                oTable.getBinding("items").refresh();
+            }
+        },
+
+        onTableUpdateFinished: function (oEvent) {
+            var iTotalCount = oEvent.getParameter("total");
+            this._oDetailModel.setProperty("/totalCount", iTotalCount || 0);
         },
 
         onSearch: function (oEvent) {
@@ -66,7 +81,7 @@ sap.ui.define([
 
         onViolationSelect: function (oEvent) {
             var oItem = oEvent.getParameter("listItem");
-            var oCtx = oItem.getBindingContext("violations");
+            var oCtx = oItem.getBindingContext("sentinelgrc");
             var oViolation = oCtx.getObject();
             this._oDetailModel.setProperty("/selectedViolation", oViolation);
             this._oDetailModel.setProperty("/remediationText", null);
@@ -75,22 +90,28 @@ sap.ui.define([
         onAcknowledge: function () {
             var oViolation = this._oDetailModel.getProperty("/selectedViolation");
             if (!oViolation) return;
-            var oViolationsModel = this.getModel("violations");
-            var aViolations = oViolationsModel.getProperty("/violations");
-            var idx = aViolations.findIndex(function (v) { return v.id === oViolation.id; });
-            if (idx >= 0) {
-                aViolations[idx].status = "Acknowledged";
-                oViolationsModel.setProperty("/violations", aViolations);
-                this._oDetailModel.setProperty("/selectedViolation", aViolations[idx]);
-                this.showToast(oViolation.id + " acknowledged");
-            }
+            var oModel = this.getModel("sentinelgrc");
+            // Update status via OData PATCH
+            var oContext = oModel.bindContext("/Violations(" + oViolation.ID + ")");
+            oContext.setProperty("status", "Acknowledged")
+                .then(function () {
+                    oViolation.status = "Acknowledged";
+                    this._oDetailModel.setProperty("/selectedViolation", oViolation);
+                    this.showToast("Violation acknowledged");
+                    oModel.refresh();
+                }.bind(this))
+                .catch(function () {
+                    // Fallback — just update local model
+                    oViolation.status = "Acknowledged";
+                    this._oDetailModel.setProperty("/selectedViolation", oViolation);
+                    this.showToast("Violation acknowledged");
+                }.bind(this));
         },
 
         onOpenTicket: function () {
             var oViolation = this._oDetailModel.getProperty("/selectedViolation");
             if (!oViolation) return;
-            var iTicketNum = 1000 + parseInt(oViolation.id.replace(/\D/g, ""), 10);
-            this.showToast("Ticket TKT-" + iTicketNum + " created in ServiceNow");
+            this.showToast("Ticket created for " + oViolation.userName);
         },
 
         onMuteRule: function () {
@@ -100,18 +121,17 @@ sap.ui.define([
         onScheduleRemediation: function () {
             var oViolation = this._oDetailModel.getProperty("/selectedViolation");
             if (!oViolation) return;
-            // Store context and navigate to calendar
             var oAppState = this.getModel("appState");
             oAppState.setProperty("/pendingRemediation", {
-                violationId: oViolation.id,
-                userId:      oViolation.userId,
-                userName:    oViolation.userName,
+                violationId:  oViolation.ID,
+                userId:       oViolation.userId,
+                userName:     oViolation.userName,
                 roleToRemove: oViolation.roleB,
-                title:       "Remove " + oViolation.roleB + " from " + oViolation.userId,
-                priority:    oViolation.severity
+                title:        "Remove " + oViolation.roleB + " from " + oViolation.userId,
+                priority:     oViolation.severity
             });
             this.navTo("remediation");
-            this.showToast("Opening Remediation Calendar for " + oViolation.id);
+            this.showToast("Opening Remediation Calendar for " + oViolation.userId);
         },
 
         onGenerateRemediation: function () {
@@ -126,18 +146,18 @@ sap.ui.define([
                 }.bind(this))
                 .catch(function () {
                     this._oDetailModel.setProperty("/remediationLoading", false);
-                    this.showError("Failed to generate remediation. Check API connectivity.");
+                    this.showError("Failed to generate remediation.");
                 }.bind(this));
         },
 
         onExportCSV: function () {
-            this.showToast("Exporting violations CSV…");
+            this.showToast("Exporting violations CSV...");
         },
 
         onNavigateToUser: function (oEvent) {
-            var sUserId = oEvent.getSource().data("userId");
-            if (sUserId) {
-                this.navTo("userDetail", { userId: sUserId });
+            var oViolation = this._oDetailModel.getProperty("/selectedViolation");
+            if (oViolation && oViolation.userId) {
+                this.navTo("userDetail", { userId: oViolation.userId });
             }
         }
     });

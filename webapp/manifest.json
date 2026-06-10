@@ -3,7 +3,7 @@
   "sap.app": {
     "id": "sentinel.security",
     "type": "application",
-    "title": "SentinelGRC \u2013 SAP GRC Security Platform",
+    "title": "SentinelGRC – SAP GRC Security Platform",
     "description": "Cloud-native SAP GRC security analysis and remediation platform",
     "applicationVersion": {
       "version": "1.0.0"
@@ -40,6 +40,13 @@
       "remediations": {
         "uri": "model/mockdata/remediations.json",
         "type": "JSON"
+      },
+      "sentinelgrc": {
+        "uri": "/security-service/",
+        "type": "OData",
+        "settings": {
+          "odataVersion": "4.0"
+        }
       }
     }
   },
@@ -130,6 +137,16 @@
       "remediations": {
         "type": "sap.ui.model.json.JSONModel",
         "dataSource": "remediations"
+      },
+      "sentinelgrc": {
+        "type": "sap.ui.model.odata.v4.ODataModel",
+        "dataSource": "sentinelgrc",
+        "preload": true,
+        "settings": {
+          "synchronizationMode": "None",
+          "operationMode": "Server",
+          "autoExpandSelect": true
+        }
       }
     },
     "routing": {

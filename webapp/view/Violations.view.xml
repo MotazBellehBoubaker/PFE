@@ -54,48 +54,52 @@
                         <Toolbar>
                             <Title text="Violations" level="H5"/>
                             <ToolbarSpacer/>
-                            <Text text="{= ${violations>/violations}.length + ' items'}"/>
+                            <Text text="{= ${detail>/totalCount} + ' items'}"/>
                         </Toolbar>
                     </headerToolbar>
                     <content>
                         <Table
                             id="violationsTable"
-                            items="{violations>/violations}"
+                            items="{
+                                path: 'sentinelgrc>/Violations',
+                                parameters: {
+                                    $orderby: 'detectedAt desc'
+                                }
+                            }"
                             mode="SingleSelectMaster"
                             selectionChange=".onViolationSelect"
                             growing="true"
                             growingThreshold="15"
-                            sticky="ColumnHeaders">
+                            sticky="ColumnHeaders"
+                            updateFinished=".onTableUpdateFinished">
                             <columns>
-                                <Column width="8rem">  <Text text="ID"/>               </Column>
-                                <Column width="7rem">  <Text text="Severity"/>         </Column>
-                                <Column width="10rem"> <Text text="User"/>             </Column>
-                                <Column>               <Text text="Conflicting Roles"/></Column>
-                                <Column width="8rem">  <Text text="Status"/>           </Column>
-                                <Column width="10rem"> <Text text="Detected"/>         </Column>
+                                <Column width="7rem">  <Text text="Severity"/>          </Column>
+                                <Column width="10rem"> <Text text="User"/>              </Column>
+                                <Column>               <Text text="Conflicting Roles"/> </Column>
+                                <Column width="8rem">  <Text text="Status"/>            </Column>
+                                <Column width="12rem"> <Text text="Detected"/>          </Column>
                             </columns>
                             <items>
                                 <ColumnListItem
-                                    highlight="{path: 'violations>severity', formatter: '.formatter.rowHighlight'}"
+                                    highlight="{path: 'sentinelgrc>severity', formatter: '.formatter.rowHighlight'}"
                                     type="Active">
                                     <cells>
-                                        <Text text="{violations>id}" class="sentinelMono"/>
                                         <ObjectStatus
-                                            text="{violations>severity}"
-                                            state="{path: 'violations>severity', formatter: '.formatter.severityState'}"
-                                            icon="{path: 'violations>severity', formatter: '.formatter.severityIcon'}"/>
+                                            text="{sentinelgrc>severity}"
+                                            state="{path: 'sentinelgrc>severity', formatter: '.formatter.severityState'}"
+                                            icon="{path: 'sentinelgrc>severity', formatter: '.formatter.severityIcon'}"/>
                                         <ObjectIdentifier
-                                            title="{violations>userName}"
-                                            text="{violations>userId}"/>
+                                            title="{sentinelgrc>userName}"
+                                            text="{sentinelgrc>userId}"/>
                                         <HBox alignItems="Center">
-                                            <Text text="{violations>roleA}" class="sentinelMono sentinelChip"/>
+                                            <Text text="{sentinelgrc>roleA}" class="sentinelMono sentinelChip"/>
                                             <core:Icon src="sap-icon://arrow-right" class="sapUiSmallMarginBeginEnd"/>
-                                            <Text text="{violations>roleB}" class="sentinelMono sentinelChip"/>
+                                            <Text text="{sentinelgrc>roleB}" class="sentinelMono sentinelChip"/>
                                         </HBox>
                                         <ObjectStatus
-                                            text="{violations>status}"
-                                            state="{path: 'violations>status', formatter: '.formatter.violationStatusState'}"/>
-                                        <Text text="{violations>detected}" class="sentinelMono"/>
+                                            text="{sentinelgrc>status}"
+                                            state="{path: 'sentinelgrc>status', formatter: '.formatter.violationStatusState'}"/>
+                                        <Text text="{path: 'sentinelgrc>detectedAt', formatter: '.formatter.formatDate'}" class="sentinelMono"/>
                                     </cells>
                                 </ColumnListItem>
                             </items>
@@ -103,14 +107,14 @@
                     </content>
                 </Panel>
 
-                <!-- Detail Panel - shows below table when violation selected -->
+                <!-- Detail Panel -->
                 <Panel
                     id="detailPanel"
                     visible="{= !!${detail>/selectedViolation} }"
                     class="sapUiSmallMarginTop">
                     <headerToolbar>
                         <Toolbar>
-                            <Title text="{detail>/selectedViolation/id}" level="H5" class="sentinelMono"/>
+                            <Title text="{detail>/selectedViolation/ID}" level="H5" class="sentinelMono"/>
                             <ToolbarSpacer/>
                             <ObjectStatus
                                 text="{detail>/selectedViolation/severity}"
@@ -121,15 +125,10 @@
                         <VBox class="sapUiSmallMargin">
                             <Title text="{detail>/selectedViolation/risk}" level="H5" class="sapUiSmallMarginBottom"/>
 
-                            <!-- Detail rows as simple HBox pairs -->
                             <HBox class="sapUiSmallMarginBottom">
                                 <Label text="User:" width="100px"/>
                                 <Link text="{detail>/selectedViolation/userName}" press=".onNavigateToUser"/>
-                                <Text text=" - {detail>/selectedViolation/userId}" class="sentinelMono"/>
-                            </HBox>
-                            <HBox class="sapUiSmallMarginBottom">
-                                <Label text="Department:" width="100px"/>
-                                <Text text="{detail>/selectedViolation/dept}"/>
+                                <Text text=" ({detail>/selectedViolation/userId})" class="sentinelMono"/>
                             </HBox>
                             <HBox class="sapUiSmallMarginBottom">
                                 <Label text="Role A:" width="100px"/>
@@ -141,11 +140,11 @@
                             </HBox>
                             <HBox class="sapUiSmallMarginBottom">
                                 <Label text="Detected:" width="100px"/>
-                                <Text text="{detail>/selectedViolation/detected}" class="sentinelMono"/>
+                                <Text text="{detail>/selectedViolation/detectedAt}" class="sentinelMono"/>
                             </HBox>
                             <HBox class="sapUiSmallMarginBottom">
                                 <Label text="Scan:" width="100px"/>
-                                <Text text="{detail>/selectedViolation/scan}" class="sentinelMono"/>
+                                <Text text="{detail>/selectedViolation/scanId}" class="sentinelMono"/>
                             </HBox>
                             <HBox class="sapUiSmallMarginBottom">
                                 <Label text="Status:" width="100px"/>
@@ -158,12 +157,12 @@
                             <HBox class="sapUiSmallMarginTop sapUiSmallMarginBottom">
                                 <Button text="Acknowledge"          type="Emphasized"  press=".onAcknowledge"           class="sapUiSmallMarginEnd"/>
                                 <Button text="Open Ticket"                             press=".onOpenTicket"             class="sapUiSmallMarginEnd"/>
-                                <Button text="Schedule Remediation" icon="sap-icon://appointment-2" type="Default" press=".onScheduleRemediation" class="sapUiSmallMarginEnd"/>
+                                <Button text="Schedule Remediation" icon="sap-icon://appointment-2" press=".onScheduleRemediation" class="sapUiSmallMarginEnd"/>
                                 <Button text="Mute Rule"                               press=".onMuteRule"/>
                             </HBox>
 
                             <!-- AI Remediation -->
-                            <Panel headerText="AI Remediation Playbook" expandable="true" expanded="false">
+                            <Panel expandable="true" expanded="false">
                                 <headerToolbar>
                                     <Toolbar>
                                         <Title text="AI Remediation Playbook" level="H6"/>

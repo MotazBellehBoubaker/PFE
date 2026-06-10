@@ -14,7 +14,8 @@
   },
   "devDependencies": {
     "@cap-js/sqlite": "^2",
-    "@sap/cds-dk": "^9"
+    "@sap/cds-dk": "^9",
+    "ui5-middleware-simpleproxy": "^3.8.0"
   },
   "scripts": {
     "start": "cds-serve",
