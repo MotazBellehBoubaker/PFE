@@ -130,6 +130,15 @@ sap.ui.define([], function () {
          * @param {string} sDate
          * @returns {string}
          */
+        scanStatusState: function (sStatus) {
+            switch (sStatus) {
+                case 'Complete': return 'Success';
+                case 'Running':  return 'Warning';
+                case 'Failed':   return 'Error';
+                default:         return 'None';
+            }
+        },
+
         userInitials: function (sName) {
             var sParts = sName.trim().split(/[_s-]/);
             if (sParts.length >= 2) {
