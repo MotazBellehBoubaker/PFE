@@ -14,7 +14,7 @@
                 <contentLeft>
                     <Title text="Security Posture Overview" level="H4"/>
                     <ObjectStatus
-                        text="Last scan: SC-2026-031 · Grounded on SC-2026-031"
+                        text="{= 'Last scan: ' + ${ovState>/latestScanCode}}"
                         state="Success"
                         icon="sap-icon://accept"
                         class="sapUiSmallMarginBegin"/>
@@ -42,69 +42,66 @@
 
             <VBox class="sapUiMediumMargin">
 
-                <!-- ── KPI Tiles ── -->
+                <!-- KPI Tiles -->
                 <HBox wrap="Wrap" class="sapUiSmallMarginBottom">
-                    <GenericTile header="System Risk Score" subheader="30-day · lower is better"
+                    <GenericTile header="System Risk Score" subheader="Latest scan"
                         press=".onNavTo" frameType="TwoByOne"
                         class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
                         <tileContent>
-                            <TileContent footer="↑ +4 since last scan">
-                                <content><NumericContent value="78" indicator="Up" valueColor="Critical" withMargin="false"/></content>
+                            <TileContent footer="{ovState>/latestScanCode}">
+                                <content><NumericContent value="{ovState>/riskScore}" indicator="Up" valueColor="Critical" withMargin="false"/></content>
                             </TileContent>
                         </tileContent>
                     </GenericTile>
-                    <GenericTile header="Open Violations" subheader="7 High · 8 Med · 3 Low"
+                    <GenericTile header="Open Violations" subheader="{ovState>/violationSubheader}"
                         press=".onViewAllViolations" frameType="TwoByOne"
                         class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
                         <tileContent>
-                            <TileContent footer="↑ +3 new this scan">
-                                <content><NumericContent value="18" indicator="Up" valueColor="Critical" withMargin="false"/></content>
+                            <TileContent footer="Latest scan">
+                                <content><NumericContent value="{ovState>/violationsFound}" indicator="Up" valueColor="Critical" withMargin="false"/></content>
                             </TileContent>
                         </tileContent>
                     </GenericTile>
-                    <GenericTile header="Critical Roles" subheader="SAP_ALL · Firefighter · Wildcard"
+                    <GenericTile header="Critical Roles" subheader="SAP_ALL holders"
                         press=".onNavToCritical" frameType="TwoByOne"
                         class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
                         <tileContent>
-                            <TileContent footer="2 SAP_ALL · 2 Firefighter">
-                                <content><NumericContent value="4" valueColor="Critical" withMargin="false"/></content>
+                            <TileContent footer="Super profiles assigned">
+                                <content><NumericContent value="{ovState>/criticalRoles}" valueColor="Critical" withMargin="false"/></content>
                             </TileContent>
                         </tileContent>
                     </GenericTile>
-                    <GenericTile header="Compliance" subheader="3 components outdated"
+                    <GenericTile header="Compliance" subheader="Latest scan score"
                         press=".onNavToCompliance" frameType="TwoByOne"
                         class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
                         <tileContent>
-                            <TileContent unit="%" footer="↑ +2% vs last scan">
-                                <content><NumericContent value="82" indicator="Up" valueColor="Good" withMargin="false"/></content>
+                            <TileContent unit="%" footer="Component baseline">
+                                <content><NumericContent value="{ovState>/complianceScore}" indicator="Up" valueColor="Good" withMargin="false"/></content>
                             </TileContent>
                         </tileContent>
                     </GenericTile>
-                    <GenericTile header="Users Scanned" subheader="4,212 active · 2 locked"
+                    <GenericTile header="Users Scanned" subheader="Latest scan"
                         frameType="TwoByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
                         <tileContent>
-                            <TileContent footer="87 with excessive privileges">
-                                <content><NumericContent value="4218" valueColor="Neutral" withMargin="false"/></content>
+                            <TileContent footer="{ovState>/lockedSubheader}">
+                                <content><NumericContent value="{ovState>/usersScanned}" valueColor="Neutral" withMargin="false"/></content>
                             </TileContent>
                         </tileContent>
                     </GenericTile>
                 </HBox>
 
-                <!-- ── Chart Row ── -->
-                <layout:Grid
-                    defaultSpan="L4 M4 S12"
-                    class="sapUiSmallMarginBottom"
-                    hSpacing="1">
+                <!-- Chart Row -->
+                <layout:Grid defaultSpan="L4 M4 S12" class="sapUiSmallMarginBottom" hSpacing="1">
                     <layout:content>
 
-                        <!-- Risk Score + Violations Trend Line Chart — 2/3 width -->
+                        <!-- Risk Score Trend Line -->
                         <Panel>
                             <layoutData><layout:GridData span="L8 M8 S12"/></layoutData>
                             <headerToolbar>
                                 <Toolbar>
                                     <Title text="Risk Score and Violations Trend" level="H5"/>
                                     <ToolbarSpacer/>
-                                    <ObjectStatus text="Last 31 scans" state="None"/>
+                                    <ObjectStatus text="All scans" state="None"/>
                                 </Toolbar>
                             </headerToolbar>
                             <content>
@@ -115,19 +112,19 @@
                                     height="260px"
                                     width="100%">
                                     <viz:dataset>
-                                        <viz.data:FlattenedDataset data="{scans>/scans}">
+                                        <viz.data:FlattenedDataset data="{ovState>/trendData}">
                                             <viz.data:dimensions>
-                                                <viz.data:DimensionDefinition name="Scan Date" value="{scans>scanDate}"/>
+                                                <viz.data:DimensionDefinition name="Scan" value="{ovState>scanCode}"/>
                                             </viz.data:dimensions>
                                             <viz.data:measures>
-                                                <viz.data:MeasureDefinition name="Risk Score" value="{scans>riskScore}"/>
-                                                <viz.data:MeasureDefinition name="Violations" value="{scans>violations}"/>
+                                                <viz.data:MeasureDefinition name="Risk Score"  value="{ovState>riskScore}"/>
+                                                <viz.data:MeasureDefinition name="Violations"  value="{ovState>violationsFound}"/>
                                             </viz.data:measures>
                                         </viz.data:FlattenedDataset>
                                     </viz:dataset>
                                     <viz:feeds>
-                                        <viz.feeds:FeedItem id="trendValueAxis"    uid="valueAxis"    type="Measure"   values="Risk Score,Violations"/>
-                                        <viz.feeds:FeedItem id="trendCategoryAxis" uid="categoryAxis" type="Dimension" values="Scan Date"/>
+                                        <viz.feeds:FeedItem uid="valueAxis"    type="Measure"   values="Risk Score,Violations"/>
+                                        <viz.feeds:FeedItem uid="categoryAxis" type="Dimension" values="Scan"/>
                                     </viz:feeds>
                                     <viz:dependents>
                                         <viz:Popover id="trendPopover"/>
@@ -136,13 +133,11 @@
                             </content>
                         </Panel>
 
-                        <!-- Severity Donut Chart — 1/6 width -->
+                        <!-- Severity Donut -->
                         <Panel>
                             <layoutData><layout:GridData span="L2 M2 S12"/></layoutData>
                             <headerToolbar>
-                                <Toolbar>
-                                    <Title text="Severity" level="H5"/>
-                                </Toolbar>
+                                <Toolbar><Title text="Severity" level="H5"/></Toolbar>
                             </headerToolbar>
                             <content>
                                 <viz:VizFrame
@@ -152,18 +147,18 @@
                                     height="260px"
                                     width="100%">
                                     <viz:dataset>
-                                        <viz.data:FlattenedDataset data="{scans>/severityBreakdown}">
+                                        <viz.data:FlattenedDataset data="{ovState>/severityData}">
                                             <viz.data:dimensions>
-                                                <viz.data:DimensionDefinition name="Severity" value="{scans>severity}"/>
+                                                <viz.data:DimensionDefinition name="Severity" value="{ovState>severity}"/>
                                             </viz.data:dimensions>
                                             <viz.data:measures>
-                                                <viz.data:MeasureDefinition name="Count" value="{scans>count}"/>
+                                                <viz.data:MeasureDefinition name="Count" value="{ovState>count}"/>
                                             </viz.data:measures>
                                         </viz.data:FlattenedDataset>
                                     </viz:dataset>
                                     <viz:feeds>
-                                        <viz.feeds:FeedItem id="donutValueAxis" uid="size"  type="Measure"   values="Count"/>
-                                        <viz.feeds:FeedItem id="donutColorAxis" uid="color" type="Dimension" values="Severity"/>
+                                        <viz.feeds:FeedItem uid="size"  type="Measure"   values="Count"/>
+                                        <viz.feeds:FeedItem uid="color" type="Dimension" values="Severity"/>
                                     </viz:feeds>
                                     <viz:dependents>
                                         <viz:Popover id="donutPopover"/>
@@ -172,13 +167,11 @@
                             </content>
                         </Panel>
 
-                        <!-- Compliance Bar Chart — 1/6 width -->
+                        <!-- Compliance Bar -->
                         <Panel>
                             <layoutData><layout:GridData span="L2 M2 S12"/></layoutData>
                             <headerToolbar>
-                                <Toolbar>
-                                    <Title text="Compliance" level="H5"/>
-                                </Toolbar>
+                                <Toolbar><Title text="Compliance" level="H5"/></Toolbar>
                             </headerToolbar>
                             <content>
                                 <viz:VizFrame
@@ -188,18 +181,18 @@
                                     height="260px"
                                     width="100%">
                                     <viz:dataset>
-                                        <viz.data:FlattenedDataset data="{scans>/complianceBreakdown}">
+                                        <viz.data:FlattenedDataset data="{ovState>/complianceData}">
                                             <viz.data:dimensions>
-                                                <viz.data:DimensionDefinition name="Status" value="{scans>status}"/>
+                                                <viz.data:DimensionDefinition name="Status" value="{ovState>status}"/>
                                             </viz.data:dimensions>
                                             <viz.data:measures>
-                                                <viz.data:MeasureDefinition name="Components" value="{scans>count}"/>
+                                                <viz.data:MeasureDefinition name="Components" value="{ovState>count}"/>
                                             </viz.data:measures>
                                         </viz.data:FlattenedDataset>
                                     </viz:dataset>
                                     <viz:feeds>
-                                        <viz.feeds:FeedItem id="compValueAxis"    uid="valueAxis"    type="Measure"   values="Components"/>
-                                        <viz.feeds:FeedItem id="compCategoryAxis" uid="categoryAxis" type="Dimension" values="Status"/>
+                                        <viz.feeds:FeedItem uid="valueAxis"    type="Measure"   values="Components"/>
+                                        <viz.feeds:FeedItem uid="categoryAxis" type="Dimension" values="Status"/>
                                     </viz:feeds>
                                     <viz:dependents>
                                         <viz:Popover id="compliancePopover"/>
@@ -211,7 +204,7 @@
                     </layout:content>
                 </layout:Grid>
 
-                <!-- ── AI Executive Briefing ── -->
+                <!-- AI Executive Briefing -->
                 <Panel class="sapUiSmallMarginBottom">
                     <headerToolbar>
                         <Toolbar>
@@ -231,14 +224,14 @@
                         <VBox class="sapUiSmallMargin">
                             <BusyIndicator visible="{appState>/execSummaryLoading}" size="1rem"/>
                             <Text visible="{= !${appState>/execSummaryLoading} &amp;&amp; !${appState>/execSummary} }"
-                                text="Click Generate Briefing to produce a CISO-ready executive summary with top 3 priority actions for this scan window."/>
+                                text="Click Generate Briefing to produce a CISO-ready executive summary."/>
                             <FormattedText visible="{= !${appState>/execSummaryLoading} &amp;&amp; !!${appState>/execSummary} }"
                                 htmlText="{appState>/execSummary}"/>
                         </VBox>
                     </content>
                 </Panel>
 
-                <!-- ── Smart Triage ── -->
+                <!-- Smart Triage -->
                 <Panel class="sapUiSmallMarginBottom">
                     <headerToolbar>
                         <Toolbar>
@@ -257,7 +250,7 @@
                         <VBox class="sapUiSmallMargin">
                             <BusyIndicator visible="{appState>/triageLoading}" size="1rem"/>
                             <Text visible="{= !${appState>/triageLoading} &amp;&amp; !${appState>/triageInsights} }"
-                                text="Group 18 open violations into actionable themes with root cause analysis and recommended actions."/>
+                                text="Group open violations into actionable themes with root cause analysis."/>
                             <List visible="{= !${appState>/triageLoading} &amp;&amp; !!${appState>/triageInsights} }"
                                 items="{appState>/triageInsights}" showSeparators="None" backgroundDesign="Transparent">
                                 <items>
@@ -284,7 +277,7 @@
                     </content>
                 </Panel>
 
-                <!-- ── Recent High Violations ── -->
+                <!-- Recent High Violations -->
                 <Panel class="sapUiSmallMarginBottom">
                     <headerToolbar>
                         <Toolbar>
@@ -295,30 +288,31 @@
                     </headerToolbar>
                     <content>
                         <Table
-                            items="{path: 'violations>/violations', filters: [{path: 'severity', operator: 'EQ', value1: 'High'}]}"
-                            growingThreshold="5" mode="None">
+                            items="{
+                                path: 'sentinelgrc>/Violations',
+                                parameters: { $orderby: 'detectedAt desc' }
+                            }"
+                            mode="None">
                             <columns>
-                                <Column width="9rem"><Text text="ID"/></Column>
                                 <Column width="10rem"><Text text="User"/></Column>
                                 <Column><Text text="Conflicting Roles"/></Column>
                                 <Column width="7rem"><Text text="Severity"/></Column>
-                                <Column width="9rem"><Text text="Detected"/></Column>
+                                <Column width="10rem"><Text text="Detected"/></Column>
                             </columns>
                             <items>
                                 <ColumnListItem press=".onViolationPress" type="Navigation"
-                                    highlight="{path: 'violations>severity', formatter: '.formatter.rowHighlight'}">
+                                    highlight="{path: 'sentinelgrc>severity', formatter: '.formatter.rowHighlight'}">
                                     <cells>
-                                        <Text text="{violations>id}" class="sentinelMono"/>
-                                        <ObjectIdentifier title="{violations>userName}" text="{violations>userId}"/>
+                                        <ObjectIdentifier title="{sentinelgrc>userName}" text="{sentinelgrc>userId}"/>
                                         <HBox alignItems="Center">
-                                            <Text text="{violations>roleA}" class="sentinelMono sentinelChip"/>
+                                            <Text text="{sentinelgrc>roleA}" class="sentinelMono sentinelChip"/>
                                             <core:Icon src="sap-icon://arrow-right" class="sapUiSmallMarginBeginEnd"/>
-                                            <Text text="{violations>roleB}" class="sentinelMono sentinelChip"/>
+                                            <Text text="{sentinelgrc>roleB}" class="sentinelMono sentinelChip"/>
                                         </HBox>
-                                        <ObjectStatus text="{violations>severity}"
-                                            state="{path: 'violations>severity', formatter: '.formatter.severityState'}"
-                                            icon="{path: 'violations>severity', formatter: '.formatter.severityIcon'}"/>
-                                        <Text text="{violations>detected}" class="sentinelMono"/>
+                                        <ObjectStatus text="{sentinelgrc>severity}"
+                                            state="{path: 'sentinelgrc>severity', formatter: '.formatter.severityState'}"
+                                            icon="{path: 'sentinelgrc>severity', formatter: '.formatter.severityIcon'}"/>
+                                        <Text text="{path: 'sentinelgrc>detectedAt', formatter: '.formatter.formatDate'}" class="sentinelMono"/>
                                     </cells>
                                 </ColumnListItem>
                             </items>
@@ -326,7 +320,7 @@
                     </content>
                 </Panel>
 
-                <!-- ── Top Risk Users ── -->
+                <!-- Top Risk Users -->
                 <Panel>
                     <headerToolbar>
                         <Toolbar>
@@ -337,8 +331,11 @@
                     </headerToolbar>
                     <content>
                         <Table
-                            items="{path: 'users>/users', sorter: {path: 'riskScore', descending: true}}"
-                            growingThreshold="5" mode="None">
+                            items="{
+                                path: 'sentinelgrc>/SapUsers',
+                                parameters: { $orderby: 'riskScore desc' }
+                            }"
+                            mode="None">
                             <columns>
                                 <Column><Text text="User"/></Column>
                                 <Column width="8rem"><Text text="Department"/></Column>
@@ -349,16 +346,22 @@
                                 <ColumnListItem press=".onUserPress" type="Navigation">
                                     <cells>
                                         <HBox alignItems="Center">
-                                            <Avatar initials="{users>initials}" backgroundColor="Accent6" displaySize="XS" class="sapUiSmallMarginEnd"/>
-                                            <ObjectIdentifier title="{users>name}" text="{users>id}"/>
+                                            <Avatar
+                                                initials="{path: 'sentinelgrc>userName', formatter: '.formatter.userInitials'}"
+                                                backgroundColor="Accent6"
+                                                displaySize="XS"
+                                                class="sapUiSmallMarginEnd"/>
+                                            <ObjectIdentifier title="{sentinelgrc>userName}" text="{sentinelgrc>userId}"/>
                                         </HBox>
-                                        <Text text="{users>dept}"/>
+                                        <Text text="{sentinelgrc>department}"/>
                                         <ProgressIndicator
-                                            percentValue="{users>riskScore}"
-                                            displayValue="{users>riskScore}"
+                                            percentValue="{sentinelgrc>riskScore}"
+                                            displayValue="{sentinelgrc>riskScore}"
                                             width="160px"
-                                            state="{path: 'users>riskScore', formatter: '.formatter.riskScoreState'}"/>
-                                        <ObjectStatus text="{users>status}" state="{= ${users>status} === 'Active' ? 'Success' : 'Warning'}"/>
+                                            state="{path: 'sentinelgrc>riskScore', formatter: '.formatter.riskScoreState'}"/>
+                                        <ObjectStatus
+                                            text="{= ${sentinelgrc>locked} ? 'Locked' : 'Active'}"
+                                            state="{= ${sentinelgrc>locked} ? 'Warning' : 'Success'}"/>
                                     </cells>
                                 </ColumnListItem>
                             </items>

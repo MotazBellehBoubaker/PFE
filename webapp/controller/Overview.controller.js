@@ -1,133 +1,211 @@
 sap.ui.define([
     "sentinel/security/controller/BaseController",
     "sentinel/security/service/CopilotService",
+    "sap/ui/model/json/JSONModel",
     "sap/viz/ui5/format/ChartFormatter",
     "sap/viz/ui5/api/env/Format"
-], function (BaseController, CopilotService, ChartFormatter, Format) {
+], function (BaseController, CopilotService, JSONModel, ChartFormatter, Format) {
     "use strict";
 
     return BaseController.extend("sentinel.security.controller.Overview", {
 
         onInit: function () {
             this.getRouter().getRoute("overview").attachPatternMatched(this._onRouteMatched, this);
+            this._oOvState = new JSONModel({
+                latestScanCode:    "—",
+                riskScore:         0,
+                violationsFound:   0,
+                violationSubheader:"",
+                complianceScore:   0,
+                usersScanned:      0,
+                lockedSubheader:   "",
+                criticalRoles:     0,
+                trendData:         [],
+                severityData:      [],
+                complianceData:    []
+            });
+            this.getView().setModel(this._oOvState, "ovState");
         },
 
         _onRouteMatched: function () {
+            this._loadOverviewData();
             this._initCharts();
         },
 
-        // ── Chart Initialization ──────────────────────────────────────────
+        _loadOverviewData: function () {
+            var oModel = this.getModel("sentinelgrc");
+
+            // Load latest scan
+            oModel.bindList("/ScanResults", null, null, null, {
+                $orderby: "startedAt desc"
+            }).requestContexts(0, 1).then(function (aCtx) {
+                if (!aCtx.length) return;
+                var o = aCtx[0].getObject();
+                this._oOvState.setProperty("/latestScanCode",  o.scanCode        || "—");
+                this._oOvState.setProperty("/riskScore",       o.riskScore       || 0);
+                this._oOvState.setProperty("/violationsFound", o.violationsFound  || 0);
+                this._oOvState.setProperty("/complianceScore", o.complianceScore  || 0);
+                this._oOvState.setProperty("/usersScanned",    o.usersScanned     || 0);
+                this._oOvState.setProperty("/violationSubheader",
+                    (o.highCount || 0) + " High · " + (o.mediumCount || 0) + " Med · " + (o.lowCount || 0) + " Low");
+            }.bind(this));
+
+            // Load all scans for trend
+            oModel.bindList("/ScanResults", null, null, null, {
+                $orderby: "startedAt asc"
+            }).requestContexts(0, 50).then(function (aCtx) {
+                var aTrend = aCtx.map(function (c) {
+                    var o = c.getObject();
+                    return { scanCode: o.scanCode, riskScore: o.riskScore, violationsFound: o.violationsFound };
+                });
+                this._oOvState.setProperty("/trendData", aTrend);
+                this._initCharts();
+            }.bind(this));
+
+            // Load violations for severity donut
+            oModel.bindList("/Violations").requestContexts(0, 200).then(function (aCtx) {
+                var iHigh = 0, iMed = 0, iLow = 0;
+                aCtx.forEach(function (c) {
+                    var s = c.getObject().severity;
+                    if (s === "High")   iHigh++;
+                    else if (s === "Medium") iMed++;
+                    else iLow++;
+                });
+                this._oOvState.setProperty("/severityData", [
+                    { severity: "High",   count: iHigh },
+                    { severity: "Medium", count: iMed  },
+                    { severity: "Low",    count: iLow  }
+                ]);
+                this._initCharts();
+            }.bind(this));
+
+            // Load compliance components for bar chart
+            oModel.bindList("/ComplianceComponents").requestContexts(0, 200).then(function (aCtx) {
+                var iCompliant = 0, iOutdated = 0, iUnknown = 0;
+                aCtx.forEach(function (c) {
+                    var s = c.getObject().status;
+                    if (s === "Compliant")  iCompliant++;
+                    else if (s === "Outdated") iOutdated++;
+                    else iUnknown++;
+                });
+                this._oOvState.setProperty("/complianceData", [
+                    { status: "Compliant", count: iCompliant },
+                    { status: "Outdated",  count: iOutdated  },
+                    { status: "Unknown",   count: iUnknown   }
+                ]);
+                this._initCharts();
+            }.bind(this));
+
+            // Load critical roles count
+            oModel.bindList("/CriticalRoleAssignments").requestContexts(0, 100).then(function (aCtx) {
+                this._oOvState.setProperty("/criticalRoles", aCtx.length);
+            }.bind(this));
+
+            // Load locked users count
+            oModel.bindList("/SapUsers").requestContexts(0, 500).then(function (aCtx) {
+                var iLocked = aCtx.filter(function (c) { return c.getObject().locked; }).length;
+                this._oOvState.setProperty("/lockedSubheader", iLocked + " locked accounts");
+            }.bind(this));
+        },
+
         _initCharts: function () {
             try {
                 Format.numericFormatter(ChartFormatter.getInstance());
                 var fmt = ChartFormatter.DefaultPattern;
 
-                // ── Trend Line Chart ──
                 var oTrend = this.byId("trendVizFrame");
                 if (oTrend) {
                     oTrend.setVizProperties({
-                        title: { visible: false },
-                        legend: { visible: true },
+                        title:    { visible: false },
+                        legend:   { visible: true },
                         plotArea: {
-                            dataLabel: { visible: false },
+                            dataLabel:    { visible: false },
                             colorPalette: ["#0070f2", "#bb0000"]
                         },
-                        valueAxis: {
-                            title: { visible: false },
-                            label: { formatString: fmt.SHORTFLOAT }
-                        },
-                        categoryAxis: { title: { visible: false } },
-                        interaction: { selectability: { mode: "EXCLUSIVE" } }
+                        valueAxis:    { title: { visible: false }, label: { formatString: fmt.SHORTFLOAT } },
+                        categoryAxis: { title: { visible: false } }
                     });
-                    var oTrendPopover = this.byId("trendPopover");
-                    if (oTrendPopover) {
-                        oTrendPopover.connect(oTrend.getVizUid());
-                        oTrendPopover.setFormatString(fmt.STANDARDFLOAT);
-                    }
+                    var oPop = this.byId("trendPopover");
+                    if (oPop) oPop.connect(oTrend.getVizUid());
                 }
 
-                // ── Severity Donut ──
                 var oDonut = this.byId("donutVizFrame");
                 if (oDonut) {
                     oDonut.setVizProperties({
-                        title: { visible: false },
-                        legend: { visible: true },
+                        title:    { visible: false },
+                        legend:   { visible: true },
                         plotArea: {
-                            dataLabel: {
-                                visible: true,
-                                type: "percentage"
-                            },
+                            dataLabel:    { visible: true, type: "percentage" },
                             colorPalette: ["#bb0000", "#e76500", "#188918"]
                         }
                     });
-                    var oDonutPopover = this.byId("donutPopover");
-                    if (oDonutPopover) {
-                        oDonutPopover.connect(oDonut.getVizUid());
-                        oDonutPopover.setFormatString(fmt.STANDARDFLOAT);
-                    }
+                    var oDonutPop = this.byId("donutPopover");
+                    if (oDonutPop) oDonutPop.connect(oDonut.getVizUid());
                 }
 
-                // ── Compliance Bar ──
                 var oComp = this.byId("complianceVizFrame");
                 if (oComp) {
                     oComp.setVizProperties({
-                        title: { visible: false },
-                        legend: { visible: false },
+                        title:    { visible: false },
+                        legend:   { visible: false },
                         plotArea: {
-                            dataLabel: { visible: true },
-                            colorPalette: ["#188918", "#e76500"]
+                            dataLabel:    { visible: true },
+                            colorPalette: ["#188918", "#e76500", "#888888"]
                         },
-                        valueAxis: { title: { visible: false } },
+                        valueAxis:    { title: { visible: false } },
                         categoryAxis: { title: { visible: false } }
                     });
-                    var oCompPopover = this.byId("compliancePopover");
-                    if (oCompPopover) {
-                        oCompPopover.connect(oComp.getVizUid());
-                        oCompPopover.setFormatString(fmt.STANDARDFLOAT);
-                    }
+                    var oCompPop = this.byId("compliancePopover");
+                    if (oCompPop) oCompPop.connect(oComp.getVizUid());
                 }
             } catch (e) {
-                // sap.viz not yet loaded — charts will render on next visit
                 console.warn("Chart init deferred:", e.message);
             }
         },
 
-        // ── Scan Trigger ─────────────────────────────────────────────────
         onTriggerScan: function () {
             var oAppState = this.getModel("appState");
+            var oModel    = this.getModel("sentinelgrc");
             oAppState.setProperty("/scanning", true);
             oAppState.setProperty("/scanProgress", 0);
 
             var iProgress = 0;
             var oInterval = setInterval(function () {
                 iProgress += Math.random() * 18;
-                if (iProgress >= 100) {
-                    iProgress = 100;
-                    clearInterval(oInterval);
-                    setTimeout(function () {
-                        oAppState.setProperty("/scanning", false);
-                        oAppState.setProperty("/scanProgress", 0);
-                        this.showToast("Scan SC-2026-032 complete · 4,218 users · 18 violations · Risk: 78");
-                    }.bind(this), 400);
-                }
+                if (iProgress >= 90) iProgress = 90;
                 oAppState.setProperty("/scanProgress", iProgress / 100);
-            }.bind(this), 280);
+            }, 280);
+
+            var oAction = oModel.bindContext("/triggerScan(...)");
+            oAction.execute().then(function (oResult) {
+                clearInterval(oInterval);
+                oAppState.setProperty("/scanProgress", 1);
+                setTimeout(function () {
+                    oAppState.setProperty("/scanning", false);
+                    oAppState.setProperty("/scanProgress", 0);
+                    this._loadOverviewData();
+                    this.showToast("Scan complete — data refreshed");
+                }.bind(this), 400);
+            }.bind(this)).catch(function (err) {
+                clearInterval(oInterval);
+                oAppState.setProperty("/scanning", false);
+                this.showToast("Scan failed: " + (err.message || "unknown error"));
+            }.bind(this));
         },
 
-        // ── Navigation ───────────────────────────────────────────────────
         onViewAllViolations: function () { this.navTo("violations"); },
         onViewAllUsers:      function () { this.navTo("users"); },
         onNavToCritical:     function () { this.navTo("critical"); },
         onNavToCompliance:   function () { this.navTo("compliance"); },
         onNavTo:             function () { this.navTo("violations"); },
         onViolationPress:    function () { this.navTo("violations"); },
+        onExportOverview:    function () { this.showToast("Exporting overview report..."); },
+
         onUserPress: function (oEvent) {
-            var sUserId = oEvent.getSource().getBindingContext("users").getProperty("id");
+            var oCtx    = oEvent.getSource().getBindingContext("sentinelgrc");
+            var sUserId = oCtx.getProperty("userId");
             this.navTo("userDetail", { userId: sUserId });
         },
-
-        // ── AI ───────────────────────────────────────────────────────────
-        onExportOverview: function () { this.showToast("Exporting overview report..."); },
 
         onGenerateBriefing: function () {
             var oAppState = this.getModel("appState");
@@ -135,12 +213,13 @@ sap.ui.define([
             oAppState.setProperty("/execSummary", null);
             CopilotService.generateBriefing()
                 .then(function (sResult) {
-                    oAppState.setProperty("/execSummary", sResult.replace(/\n/g, "<br/>").replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>"));
+                    oAppState.setProperty("/execSummary",
+                        sResult.replace(/\n/g, "<br/>").replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>"));
                     oAppState.setProperty("/execSummaryLoading", false);
                 }.bind(this))
                 .catch(function () {
                     oAppState.setProperty("/execSummaryLoading", false);
-                    this.showError("Failed to generate briefing. Check API connectivity.");
+                    this.showError("Failed to generate briefing.");
                 }.bind(this));
         },
 
@@ -155,7 +234,7 @@ sap.ui.define([
                 }.bind(this))
                 .catch(function () {
                     oAppState.setProperty("/triageLoading", false);
-                    this.showError("Failed to analyze violations. Check API connectivity.");
+                    this.showError("Failed to analyze violations.");
                 }.bind(this));
         }
     });
