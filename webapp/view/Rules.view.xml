@@ -47,7 +47,7 @@
                     <content>
                         <Table
                             id="rulesTable"
-                            items="{rules>/rules}"
+                            items="{sentinelgrc>/SodRules}"
                             mode="None"
                             sticky="ColumnHeaders"
                             growing="true"
@@ -64,20 +64,20 @@
                             </columns>
                             <items>
                                 <ColumnListItem
-                                    highlight="{= ${rules>enabled} ? 'None' : 'Information'}">
+                                    highlight="{= ${sentinelgrc>active} ? 'None' : 'Information'}">
                                     <cells>
-                                        <Text text="{rules>id}" class="sentinelMono"/>
-                                        <Text text="{rules>roleA}" class="sentinelMono sentinelChip"/>
-                                        <Text text="{rules>roleB}" class="sentinelMono sentinelChip"/>
+                                        <Text text="{sentinelgrc>ruleCode}" class="sentinelMono"/>
+                                        <Text text="{sentinelgrc>roleA}" class="sentinelMono sentinelChip"/>
+                                        <Text text="{sentinelgrc>roleB}" class="sentinelMono sentinelChip"/>
                                         <ObjectStatus
-                                            text="{rules>severity}"
-                                            state="{path: 'rules>severity', formatter: '.formatter.severityState'}"/>
-                                        <Text text="{rules>risk}"/>
+                                            text="{sentinelgrc>riskLevel}"
+                                            state="{path: 'sentinelgrc>riskLevel', formatter: '.formatter.severityState'}"/>
+                                        <Text text="{sentinelgrc>riskDescription}"/>
                                         <ObjectNumber
-                                            number="{rules>hits}"
-                                            state="{= ${rules>hits} > 0 ? 'Error' : 'None'}"/>
+                                            number="{sentinelgrc>ruleCode}"
+                                            state="None"/>
                                         <Switch
-                                            state="{rules>enabled}"
+                                            state="{sentinelgrc>active}"
                                             change=".onToggleRule"/>
                                         <Button
                                             icon="sap-icon://edit"

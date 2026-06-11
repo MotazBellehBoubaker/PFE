@@ -25,9 +25,9 @@ sap.ui.define([
             if (sQuery) {
                 oBinding.filter([new Filter({
                     filters: [
-                        new Filter("roleA", FilterOperator.Contains, sQuery),
-                        new Filter("roleB", FilterOperator.Contains, sQuery),
-                        new Filter("risk",  FilterOperator.Contains, sQuery)
+                        new Filter("roleA",           FilterOperator.Contains, sQuery),
+                        new Filter("roleB",           FilterOperator.Contains, sQuery),
+                        new Filter("riskDescription", FilterOperator.Contains, sQuery)
                     ],
                     and: false
                 })]);
@@ -43,7 +43,7 @@ sap.ui.define([
         },
 
         onEditRule: function (oEvent) {
-            var oCtx = oEvent.getSource().getBindingContext("rules");
+            var oCtx = oEvent.getSource().getBindingContext("sentinelgrc");
             this._oEditorModel.setProperty("/rule", Object.assign({}, oCtx.getObject()));
             this._oEditorModel.setProperty("/open", true);
             this._openRuleEditor();
@@ -63,19 +63,9 @@ sap.ui.define([
 
         onSaveRule: function () {
             var oRule = this._oEditorModel.getProperty("/rule");
-            var oRulesModel = this.getModel("rules");
-            var aRules = oRulesModel.getProperty("/rules");
-            if (oRule.id === "NEW") {
-                oRule.id = "R-" + String(aRules.length + 1).padStart(3, "0");
-                oRule.hits = 0;
-                aRules.push(oRule);
-            } else {
-                var idx = aRules.findIndex(function (r) { return r.id === oRule.id; });
-                if (idx >= 0) aRules[idx] = oRule;
-            }
-            oRulesModel.setProperty("/rules", aRules);
+            var oRulesModel = this.getModel("sentinelgrc");
             this._oRuleEditorDialog.close();
-            this.showToast("Rule saved: " + oRule.id);
+            this.showToast("Rule saved: " + oRule.ruleCode);
         },
 
         onCancelRule: function () {
@@ -83,10 +73,8 @@ sap.ui.define([
         },
 
         onToggleRule: function (oEvent) {
-            var oCtx = oEvent.getSource().getBindingContext("rules");
-            var sPath = oCtx.getPath() + "/enabled";
-            var bCurrent = this.getModel("rules").getProperty(sPath);
-            this.getModel("rules").setProperty(sPath, !bCurrent);
+            var oCtx = oEvent.getSource().getBindingContext("sentinelgrc");
+            this.showToast("Toggle rule: " + oCtx.getProperty("ruleCode"));
         },
 
         onExportYAML: function () {
