@@ -1,0 +1,171 @@
+<mvc:View
+    controllerName="sentinel.security.controller.UserDetail"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:f="sap.ui.layout.form"
+    xmlns:core="sap.ui.core">
+
+    <Page showNavButton="true" navButtonPress=".onNavBack" class="sentinelPage">
+        <customHeader>
+            <Bar>
+                <contentLeft>
+                    <Button icon="sap-icon://nav-back" press=".onNavBack" type="Transparent"/>
+                    <Avatar
+                        initials="{userDetail>/user/initials}"
+                        backgroundColor="Accent6"
+                        displaySize="S"
+                        class="sapUiSmallMarginEnd"/>
+                    <VBox>
+                        <Title text="{userDetail>/user/name}" level="H4"/>
+                        <Text text="{userDetail>/user/id}" class="sentinelMono"/>
+                    </VBox>
+                </contentLeft>
+                <contentRight>
+                    <Button text="Ask Co-pilot" icon="sap-icon://ai"    type="Emphasized" press=".onAskCopilot"/>
+                    <Button text="Export"       icon="sap-icon://download"                press=".onExportReport"/>
+                </contentRight>
+            </Bar>
+        </customHeader>
+
+        <content>
+            <VBox class="sapUiMediumMargin">
+
+                <!-- User KPIs -->
+                <HBox wrap="Wrap" class="sapUiSmallMarginBottom">
+                    <GenericTile header="Risk Score" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent>
+                            <TileContent>
+                                <content>
+                                    <NumericContent
+                                        value="{userDetail>/user/riskScore}"
+                                        valueColor="{path: 'userDetail>/user/riskScore', formatter: '.formatter.riskScoreState'}"
+                                        withMargin="false"/>
+                                </content>
+                            </TileContent>
+                        </tileContent>
+                    </GenericTile>
+                    <GenericTile header="Roles Assigned" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent>
+                            <TileContent>
+                                <content>
+                                    <NumericContent value="{userDetail>/user/roles}" valueColor="Neutral" withMargin="false"/>
+                                </content>
+                            </TileContent>
+                        </tileContent>
+                    </GenericTile>
+                    <GenericTile header="Open Violations" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent>
+                            <TileContent>
+                                <content>
+                                    <NumericContent value="{= ${userDetail>/userViolations}.length }" valueColor="Critical" withMargin="false"/>
+                                </content>
+                            </TileContent>
+                        </tileContent>
+                    </GenericTile>
+                    <GenericTile header="Last Login" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent>
+                            <TileContent>
+                                <content>
+                                    <NumericContent value="{userDetail>/user/lastLogin}" valueColor="Neutral" withMargin="false" scale=""/>
+                                </content>
+                            </TileContent>
+                        </tileContent>
+                    </GenericTile>
+                </HBox>
+
+                <!-- User details form -->
+                <Panel headerText="User Details" expandable="true" expanded="true" class="sapUiSmallMarginBottom">
+                    <content>
+                        <VBox class="sapUiSmallMargin">
+                                <Label text="User ID"/>         <Text text="{userDetail>/user/id}" class="sentinelMono"/>
+                                <Label text="Full Name"/>       <Text text="{userDetail>/user/name}"/>
+                                <Label text="Department"/>      <Text text="{userDetail>/user/dept}"/>
+                                <Label text="User Type"/>
+                                <ObjectStatus
+                                    text="{userDetail>/user/type}"
+                                    state="{path: 'userDetail>/user/type', formatter: '.formatter.userTypeState'}"/>
+                                <Label text="Status"/>
+                                <ObjectStatus
+                                    text="{userDetail>/user/status}"
+                                    state="{= ${userDetail>/user/status} === 'Active' ? 'Success' : 'Warning'}"/>
+                                <Label text="Valid Until"/>     <Text text="{userDetail>/user/validUntil}" class="sentinelMono"/>
+                                <Label text="Last Login"/>      <Text text="{userDetail>/user/lastLogin}"/>
+                                <Label text="Risk Score"/>
+                                <ProgressIndicator
+                                    percentValue="{userDetail>/user/riskScore}"
+                                    displayValue="{userDetail>/user/riskScore}"
+                                    width="200px"
+                                    state="{path: 'userDetail>/user/riskScore', formatter: '.formatter.riskScoreState'}"/>
+                        </VBox>
+                    </content>
+                </Panel>
+
+                <!-- Violations for this user -->
+                <Panel headerText="Open Violations" expandable="true" expanded="true" class="sapUiSmallMarginBottom">
+                    <content>
+                        <Table
+                            items="{userDetail>/userViolations}"
+                            noDataText="No violations for this user"
+                            mode="None">
+                            <columns>
+                                <Column width="8rem"><Text text="ID"/></Column>
+                                <Column width="6rem"><Text text="Severity"/></Column>
+                                <Column>            <Text text="Conflicting Roles"/></Column>
+                                <Column>            <Text text="Business Risk"/></Column>
+                                <Column width="7rem"><Text text="Status"/></Column>
+                            </columns>
+                            <items>
+                                <ColumnListItem press=".onViolationPress" type="Navigation">
+                                    <cells>
+                                        <Text text="{userDetail>id}" class="sentinelMono"/>
+                                        <ObjectStatus
+                                            text="{userDetail>severity}"
+                                            state="{path: 'userDetail>severity', formatter: '.formatter.severityState'}"/>
+                                        <HBox alignItems="Center">
+                                            <Text text="{userDetail>roleA}" class="sentinelMono sentinelChip"/>
+                                            <core:Icon src="sap-icon://arrow-right" class="sapUiSmallMarginBeginEnd"/>
+                                            <Text text="{userDetail>roleB}" class="sentinelMono sentinelChip"/>
+                                        </HBox>
+                                        <Text text="{userDetail>risk}"/>
+                                        <ObjectStatus
+                                            text="{userDetail>status}"
+                                            state="{path: 'userDetail>status', formatter: '.formatter.violationStatusState'}"/>
+                                    </cells>
+                                </ColumnListItem>
+                            </items>
+                        </Table>
+                    </content>
+                </Panel>
+
+                <!-- Role assignments -->
+                <Panel headerText="Role Assignments" expandable="true" expanded="true">
+                    <content>
+                        <Table items="{userDetail>/roles}" noDataText="No roles found" mode="None">
+                            <columns>
+                                <Column><Text text="Role"/></Column>
+                                <Column><Text text="Description"/></Column>
+                                <Column width="8rem"><Text text="Granted"/></Column>
+                                <Column width="8rem"><Text text="Last Used"/></Column>
+                                <Column width="6rem"><Text text="Critical"/></Column>
+                            </columns>
+                            <items>
+                                <ColumnListItem>
+                                    <cells>
+                                        <Text text="{userDetail>role}" class="sentinelMono sentinelChip"/>
+                                        <Text text="{userDetail>desc}"/>
+                                        <Text text="{userDetail>granted}" class="sentinelMono"/>
+                                        <Text text="{userDetail>lastUsed}"/>
+                                        <core:Icon
+                                            src="{= ${userDetail>critical} ? 'sap-icon://warning2' : 'sap-icon://accept' }"
+                                            color="{= ${userDetail>critical} ? 'Critical' : 'Positive' }"/>
+                                    </cells>
+                                </ColumnListItem>
+                            </items>
+                        </Table>
+                    </content>
+                </Panel>
+
+            </VBox>
+        </content>
+    </Page>
+</mvc:View>

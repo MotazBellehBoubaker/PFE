@@ -1,0 +1,95 @@
+<mvc:View
+    controllerName="sentinel.security.controller.Rules"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+
+    <Page showNavButton="false" class="sentinelPage">
+        <customHeader>
+            <Bar>
+                <contentLeft><Title text="SoD Rule Matrix" level="H4"/></contentLeft>
+                <contentRight>
+                    <Button text="Export YAML"  icon="sap-icon://download" press=".onExportYAML"/>
+                    <Button text="AI Rule Author" icon="sap-icon://ai"     press=".onAuthorWithAI"/>
+                    <Button text="New Rule"     icon="sap-icon://add"      press=".onNewRule" type="Emphasized"/>
+                </contentRight>
+            </Bar>
+        </customHeader>
+        <content>
+            <VBox class="sapUiMediumMargin">
+
+                <!-- KPI row -->
+                <HBox wrap="Wrap" class="sapUiSmallMarginBottom">
+                    <GenericTile header="Total Rules"    subheader="18 active · 2 disabled"    frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content><NumericContent value="20" valueColor="Neutral" withMargin="false"/></content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile header="High Severity"  subheader="Auto-escalate to alert"    frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content><NumericContent value="8" valueColor="Critical" withMargin="false"/></content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile header="Rules Triggered" subheader="47 total hits this scan"  frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content><NumericContent value="12" valueColor="Neutral" withMargin="false"/></content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile header="Last Edited"    subheader="Marcus Reinholt · R-007"   frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent unit="days ago"><content><NumericContent value="2" valueColor="Neutral" withMargin="false"/></content></TileContent></tileContent>
+                    </GenericTile>
+                </HBox>
+
+                <Panel>
+                    <headerToolbar>
+                        <Toolbar>
+                            <SearchField
+                                placeholder="Search rules…"
+                                width="240px"
+                                search=".onSearch"
+                                liveChange=".onSearch"/>
+                        </Toolbar>
+                    </headerToolbar>
+                    <content>
+                        <Table
+                            id="rulesTable"
+                            items="{sentinelgrc>/SodRules}"
+                            mode="None"
+                            sticky="ColumnHeaders"
+                            growing="true"
+                            growingThreshold="20">
+                            <columns>
+                                <Column width="6rem">  <Text text="ID"/>          </Column>
+                                <Column>               <Text text="Role A"/>      </Column>
+                                <Column>               <Text text="Role B"/>      </Column>
+                                <Column width="7rem">  <Text text="Severity"/>    </Column>
+                                <Column>               <Text text="Business Risk"/></Column>
+                                <Column width="5rem">  <Text text="Hits"/>        </Column>
+                                <Column width="6rem">  <Text text="Active"/>      </Column>
+                                <Column width="5rem">  <Text text=""/>            </Column>
+                            </columns>
+                            <items>
+                                <ColumnListItem
+                                    highlight="{= ${sentinelgrc>active} ? 'None' : 'Information'}">
+                                    <cells>
+                                        <Text text="{sentinelgrc>ruleCode}" class="sentinelMono"/>
+                                        <Text text="{sentinelgrc>roleA}" class="sentinelMono sentinelChip"/>
+                                        <Text text="{sentinelgrc>roleB}" class="sentinelMono sentinelChip"/>
+                                        <ObjectStatus
+                                            text="{sentinelgrc>riskLevel}"
+                                            state="{path: 'sentinelgrc>riskLevel', formatter: '.formatter.severityState'}"/>
+                                        <Text text="{sentinelgrc>riskDescription}"/>
+                                        <ObjectNumber
+                                            number="{sentinelgrc>ruleCode}"
+                                            state="None"/>
+                                        <Switch
+                                            state="{sentinelgrc>active}"
+                                            change=".onToggleRule"/>
+                                        <Button
+                                            icon="sap-icon://edit"
+                                            type="Transparent"
+                                            press=".onEditRule"/>
+                                    </cells>
+                                </ColumnListItem>
+                            </items>
+                        </Table>
+                    </content>
+                </Panel>
+            </VBox>
+        </content>
+    </Page>
+</mvc:View>

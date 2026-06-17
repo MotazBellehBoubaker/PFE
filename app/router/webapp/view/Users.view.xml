@@ -1,0 +1,124 @@
+<mvc:View
+    controllerName="sentinel.security.controller.Users"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+
+    <Page showNavButton="false" class="sentinelPage">
+        <customHeader>
+            <Bar>
+                <contentLeft>
+                    <Title text="Users &amp; Risk" level="H4"/>
+                </contentLeft>
+                <contentRight>
+                    <Button text="Export" icon="sap-icon://download" press=".onExport"/>
+                </contentRight>
+            </Bar>
+        </customHeader>
+        <content>
+            <VBox class="sapUiMediumMargin">
+
+                <!-- KPI row -->
+                <HBox wrap="Wrap" class="sapUiSmallMarginBottom">
+                    <GenericTile header="Total Users" subheader="All SAP users" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content>
+                            <NumericContent value="{usersState>/totalUsers}" valueColor="Neutral" withMargin="false"/>
+                        </content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile header="Avg Risk Score" subheader="Across all users" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content>
+                            <NumericContent value="{usersState>/avgRiskScore}" valueColor="Critical" withMargin="false"/>
+                        </content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile header="Locked Users" subheader="Account locked" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content>
+                            <NumericContent value="{usersState>/lockedUsers}" valueColor="Neutral" withMargin="false"/>
+                        </content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile header="Dialog Users" subheader="Type A accounts" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content>
+                            <NumericContent value="{usersState>/dialogUsers}" valueColor="Good" withMargin="false"/>
+                        </content></TileContent></tileContent>
+                    </GenericTile>
+                </HBox>
+
+                <!-- Users table -->
+                <Panel>
+                    <headerToolbar>
+                        <Toolbar>
+                            <SearchField
+                                id="userSearch"
+                                placeholder="Search users..."
+                                width="240px"
+                                search=".onSearch"
+                                liveChange=".onSearch"/>
+                            <ToolbarSpacer/>
+                            <Label text="Sort by:"/>
+                            <Select id="sortSelect" change=".onSortChange">
+                                <items>
+                                    <core:Item key="riskScore" text="Risk Score"/>
+                                    <core:Item key="userName"  text="Name"/>
+                                    <core:Item key="userType"  text="Type"/>
+                                </items>
+                            </Select>
+                        </Toolbar>
+                    </headerToolbar>
+                    <content>
+                        <Table
+                            id="usersTable"
+                            items="{
+                                path: 'sentinelgrc>/SapUsers',
+                                parameters: {
+                                    $orderby: 'riskScore desc'
+                                }
+                            }"
+                            growing="true"
+                            growingThreshold="15"
+                            mode="None"
+                            sticky="ColumnHeaders"
+                            updateFinished=".onTableUpdateFinished">
+                            <columns>
+                                <Column>               <Text text="User"/>       </Column>
+                                <Column width="7rem">  <Text text="Type"/>       </Column>
+                                <Column width="9rem">  <Text text="Department"/> </Column>
+                                <Column width="14rem"> <Text text="Risk Score"/> </Column>
+                                <Column width="7rem">  <Text text="Status"/>     </Column>
+                                <Column width="10rem"> <Text text="Last Login"/> </Column>
+                            </columns>
+                            <items>
+                                <ColumnListItem press=".onUserPress" type="Navigation">
+                                    <cells>
+                                        <HBox alignItems="Center">
+                                            <Avatar
+                                                initials="{path: 'sentinelgrc>userName', formatter: '.formatter.userInitials'}"
+                                                backgroundColor="Accent6"
+                                                displaySize="XS"
+                                                class="sapUiSmallMarginEnd"/>
+                                            <ObjectIdentifier
+                                                title="{sentinelgrc>userName}"
+                                                text="{sentinelgrc>userId}"
+                                                class="sentinelMono"/>
+                                        </HBox>
+                                        <ObjectStatus
+                                            text="{sentinelgrc>userType}"
+                                            state="{path: 'sentinelgrc>userType', formatter: '.formatter.userTypeState'}"/>
+                                        <Text text="{sentinelgrc>department}"/>
+                                        <ProgressIndicator
+                                            percentValue="{sentinelgrc>riskScore}"
+                                            displayValue="{sentinelgrc>riskScore}"
+                                            width="130px"
+                                            state="{path: 'sentinelgrc>riskScore', formatter: '.formatter.riskScoreState'}"/>
+                                        <ObjectStatus
+                                            text="{= ${sentinelgrc>locked} ? 'Locked' : 'Active'}"
+                                            state="{= ${sentinelgrc>locked} ? 'Warning' : 'Success'}"/>
+                                        <Text text="{path: 'sentinelgrc>lastLogin', formatter: '.formatter.formatDate'}" class="sentinelMono"/>
+                                    </cells>
+                                </ColumnListItem>
+                            </items>
+                        </Table>
+                    </content>
+                </Panel>
+            </VBox>
+        </content>
+    </Page>
+</mvc:View>

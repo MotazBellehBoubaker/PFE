@@ -1,0 +1,135 @@
+{
+  "startDate": "2026-05-19T08:00:00",
+  "people": [
+    {
+      "id": "basis01",
+      "name": "Motaz Belleh Boubaker",
+      "role": "SAP Security Intern",
+      "pic": "sap-icon://employee",
+      "appointments": [
+        {
+          "id": "REM-001",
+          "title": "Remove Z_PAYM_APPROVE from JKOWAL",
+          "info": "SoD Violation VIO-031-001 · High severity · Finance dept",
+          "violationId": "VIO-031-001",
+          "userId": "JKOWAL",
+          "userName": "Jan Kowalski",
+          "roleToRemove": "Z_PAYM_APPROVE",
+          "priority": "High",
+          "status": "Scheduled",
+          "start": "2026-05-20T09:00:00",
+          "end": "2026-05-20T10:00:00",
+          "type": "Type01",
+          "tentative": false
+        },
+        {
+          "id": "REM-002",
+          "title": "Remove Z_PO_APPROVE from AMUELL",
+          "info": "SoD Violation VIO-031-002 · High severity · Procurement",
+          "violationId": "VIO-031-002",
+          "userId": "AMUELL",
+          "userName": "Anna Müller",
+          "roleToRemove": "Z_PO_APPROVE",
+          "priority": "High",
+          "status": "Scheduled",
+          "start": "2026-05-20T11:00:00",
+          "end": "2026-05-20T12:00:00",
+          "type": "Type01",
+          "tentative": false
+        },
+        {
+          "id": "REM-003",
+          "title": "Remove SAP_ALL from MROSSI",
+          "info": "Critical role · SAP_ALL on production business user · Urgent",
+          "violationId": "CRIT-002",
+          "userId": "MROSSI",
+          "userName": "Marco Rossi",
+          "roleToRemove": "SAP_ALL",
+          "priority": "High",
+          "status": "In Progress",
+          "start": "2026-05-19T14:00:00",
+          "end": "2026-05-19T15:00:00",
+          "type": "Type02",
+          "tentative": false
+        },
+        {
+          "id": "REM-004",
+          "title": "Revoke Z_ROLE_ASSIGN from SLINDQ",
+          "info": "SoD Violation VIO-031-004 · Privilege escalation risk",
+          "violationId": "VIO-031-004",
+          "userId": "SLINDQ",
+          "userName": "Sara Lindqvist",
+          "roleToRemove": "Z_ROLE_ASSIGN",
+          "priority": "Medium",
+          "status": "Done",
+          "start": "2026-05-15T10:00:00",
+          "end": "2026-05-15T11:00:00",
+          "type": "Type08",
+          "tentative": false
+        }
+      ],
+      "headers": [
+        {
+          "start": "2026-05-19T00:00:00",
+          "end": "2026-05-19T23:59:00",
+          "title": "Urgent remediation day",
+          "type": "Type07"
+        }
+      ]
+    },
+    {
+      "id": "basis02",
+      "name": "Anna Schmidt",
+      "role": "SAP Security Intern",
+      "pic": "sap-icon://employee",
+      "appointments": [
+        {
+          "id": "REM-005",
+          "title": "Remove Z_PAYM_RUN from TBECKR",
+          "info": "SoD Violation VIO-031-003 · High severity · AP dept",
+          "violationId": "VIO-031-003",
+          "userId": "TBECKR",
+          "userName": "Thomas Becker",
+          "roleToRemove": "Z_PAYM_RUN",
+          "priority": "High",
+          "status": "Scheduled",
+          "start": "2026-05-21T09:00:00",
+          "end": "2026-05-21T10:30:00",
+          "type": "Type01",
+          "tentative": false
+        },
+        {
+          "id": "REM-006",
+          "title": "Remove Z_FF_FINANCE from JKOWAL",
+          "info": "Firefighter role · No time limit · Emergency access",
+          "violationId": "CRIT-003",
+          "userId": "JKOWAL",
+          "userName": "Jan Kowalski",
+          "roleToRemove": "Z_FF_FINANCE",
+          "priority": "Medium",
+          "status": "Scheduled",
+          "start": "2026-05-22T14:00:00",
+          "end": "2026-05-22T15:00:00",
+          "type": "Type03",
+          "tentative": true
+        },
+        {
+          "id": "REM-007",
+          "title": "Revoke Z_GL_APPROVE from HNOVAK",
+          "info": "SoD Violation VIO-031-006 · Financial statement manipulation",
+          "violationId": "VIO-031-006",
+          "userId": "HNOVAK",
+          "userName": "Hana Novak",
+          "roleToRemove": "Z_GL_APPROVE",
+          "priority": "Medium",
+          "status": "Done",
+          "start": "2026-05-14T11:00:00",
+          "end": "2026-05-14T12:00:00",
+          "type": "Type08",
+          "tentative": false
+        }
+      ],
+      "headers": []
+    }
+  ]
+}

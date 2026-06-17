@@ -1,0 +1,198 @@
+/* ═══════════════════════════════════════════════════════
+   Sentinel – Custom Styles
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Mono font ── */
+.sentinelMono {
+    font-family: 'Courier New', 'Lucida Console', monospace !important;
+    font-size: 0.875rem !important;
+}
+
+/* ── Role chip ── */
+.sentinelChip {
+    display: inline-block;
+    background: var(--sapField_Background, #f5f6f7);
+    border: 1px solid var(--sapField_BorderColor, #d9dbdd);
+    border-radius: 4px;
+    padding: 1px 6px;
+}
+
+/* ── Page background ── */
+.sentinelPage {
+    background: var(--sapBackgroundColor, #f5f6f7);
+}
+
+/* ── Pipeline stage card ── */
+.sentinelPipelineStage { min-width: 72px; text-align: center; }
+
+/* ── GenericTile min width ── */
+.sapMGT { min-width: 140px !important; }
+
+/* ── Profile popover thin divider ── */
+.sentinelDivider {
+    height: 1px;
+    background: var(--sapContent_ForegroundBorderColor, #d9dbdd);
+    width: 100%;
+    margin: 4px 0 8px 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   FAB — Floating Co-pilot Button
+   ═══════════════════════════════════════════════════════ */
+#sentinelFABContainer {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 500;
+}
+#sentinelFABContainer .sapMBtn {
+    width:  56px !important;
+    height: 56px !important;
+    border-radius: 50% !important;
+    box-shadow: 0 4px 16px rgba(0,112,242,0.45) !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+#sentinelFABContainer .sapMBtn:hover {
+    transform: scale(1.08) !important;
+    box-shadow: 0 6px 24px rgba(0,112,242,0.55) !important;
+}
+#sentinelFABContainer .sapMBtnInner {
+    width:  56px !important;
+    height: 56px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+#sentinelFABContainer .sapUiIcon { font-size: 1.4rem !important; }
+
+/* ═══════════════════════════════════════════════════════
+   Co-pilot Side Panel
+   ═══════════════════════════════════════════════════════ */
+.sentinelSidePanel {
+    position: fixed;
+    top: 44px;              /* below shell header */
+    right: 0;
+    bottom: 0;
+    width: 420px;
+    background: #ffffff;
+    border-left: 1px solid var(--sapContent_ForegroundBorderColor, #d9dbdd);
+    box-shadow: -6px 0 24px rgba(0,0,0,0.10);
+    z-index: 400;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+    overflow: hidden;
+}
+.sentinelSidePanelOpen {
+    transform: translateX(0) !important;
+}
+
+/* Inner VBox fills the panel */
+.sentinelChatInner {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    width: 100% !important;
+}
+
+/* ── Panel header ── */
+.sentinelChatHeader {
+    padding: 12px 16px !important;
+    border-bottom: 1px solid var(--sapContent_ForegroundBorderColor, #d9dbdd) !important;
+    background: #ffffff !important;
+    flex-shrink: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+.sentinelChatHeader .sapMHBox {
+    width: 100% !important;
+}
+
+/* ── Scrollable message area ── */
+.sentinelChatScroll {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    min-height: 0 !important;
+}
+.sentinelChatScroll .sapMScrollContScroll {
+    padding: 12px 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+}
+/* Messages VBox inside scroll */
+.sentinelChatScroll .sapMVBox {
+    gap: 4px !important;
+}
+
+/* ── Suggestion label ── */
+.sentinelSuggLabel {
+    display: block !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.08em !important;
+    color: var(--sapContent_LabelColor, #6a6d70) !important;
+    text-transform: uppercase !important;
+    padding: 10px 16px 4px 16px !important;
+    flex-shrink: 0 !important;
+}
+
+/* ── Suggestion chips row ── */
+.sentinelSuggBox {
+    padding: 0 12px 8px 12px !important;
+    flex-shrink: 0 !important;
+}
+
+/* ── Chip buttons ── */
+.sentinelSuggBtn.sapMBtn .sapMBtnInner {
+    border-radius: 14px !important;
+    border: 1px solid var(--sapField_BorderColor, #d9dbdd) !important;
+    font-size: 0.75rem !important;
+    padding: 0.2rem 0.75rem !important;
+    height: auto !important;
+    white-space: nowrap !important;
+}
+.sentinelSuggBtn.sapMBtn:hover .sapMBtnInner {
+    background: #e8f2ff !important;
+    border-color: #0070f2 !important;
+    color: #0070f2 !important;
+}
+
+/* ── Input row ── */
+.sentinelChatInputRow {
+    padding: 10px 12px !important;
+    border-top: 1px solid var(--sapContent_ForegroundBorderColor, #d9dbdd) !important;
+    background: #ffffff !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+}
+.sentinelChatInput.sapMInputBase {
+    flex: 1 !important;
+}
+.sentinelChatInput .sapMInputBaseInner {
+    border-radius: 8px !important;
+    background: var(--sapField_Background, #f5f6f7) !important;
+}
+
+/* ── Chat bubbles ── */
+.sentinelUserBubble {
+    background: #0070f2 !important;
+    border-radius: 12px 2px 12px 12px !important;
+    padding: 10px 14px !important;
+    max-width: 300px !important;
+}
+.sentinelUserBubble .sapMFT,
+.sentinelUserBubble .sapMText,
+.sentinelUserBubble .sapMFT * {
+    color: #ffffff !important;
+}
+.sentinelBotBubble {
+    background: var(--sapBackgroundColor, #f5f6f7) !important;
+    border: 1px solid var(--sapContent_ForegroundBorderColor, #d9dbdd) !important;
+    border-radius: 2px 12px 12px 12px !important;
+    padding: 10px 14px !important;
+    max-width: 320px !important;
+}

@@ -1,0 +1,103 @@
+<mvc:View
+    controllerName="sentinel.security.controller.CriticalRoles"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+
+    <Page showNavButton="false" class="sentinelPage">
+        <customHeader>
+            <Bar>
+                <contentLeft><Title text="Critical Roles &amp; Profiles" level="H4"/></contentLeft>
+                <contentRight>
+                    <Button text="Export" icon="sap-icon://download" press=".onExport"/>
+                    <Button text="Subscribe to Alerts" icon="sap-icon://bell" press=".onSubscribeAlerts" type="Emphasized"/>
+                </contentRight>
+            </Bar>
+        </customHeader>
+        <content>
+            <VBox class="sapUiMediumMargin">
+
+                <!-- KPI row -->
+                <HBox wrap="Wrap" class="sapUiSmallMarginBottom">
+                    <GenericTile header="SAP_ALL Holders" subheader="Super profile assigned" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content>
+                            <NumericContent value="{critState>/sapAllCount}" valueColor="Critical" withMargin="false"/>
+                        </content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile header="Total Critical" subheader="All critical profiles" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content>
+                            <NumericContent value="{critState>/totalCount}" valueColor="Critical" withMargin="false"/>
+                        </content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile header="Affected Users" subheader="Unique users" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content>
+                            <NumericContent value="{critState>/uniqueUsers}" valueColor="Critical" withMargin="false"/>
+                        </content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile header="S_A.SYSTEM" subheader="System admin profile" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content>
+                            <NumericContent value="{critState>/sysAdminCount}" valueColor="Critical" withMargin="false"/>
+                        </content></TileContent></tileContent>
+                    </GenericTile>
+                </HBox>
+
+                <!-- Alert strip -->
+                <MessageStrip
+                    text="{= ${critState>/sapAllCount} + ' user(s) hold SAP_ALL in this system. This grants unrestricted access to all objects and is a critical audit finding. Immediate review required.'}"
+                    type="Error"
+                    showIcon="true"
+                    class="sapUiSmallMarginBottom"/>
+
+                <!-- Critical roles table -->
+                <Panel>
+                    <content>
+                        <Table
+                            id="criticalRolesTable"
+                            items="{
+                                path: 'sentinelgrc>/CriticalRoleAssignments',
+                                parameters: { $orderby: 'criticalType asc' }
+                            }"
+                            mode="None"
+                            sticky="ColumnHeaders"
+                            updateFinished=".onTableUpdateFinished">
+                            <columns>
+                                <Column>               <Text text="User"/>             </Column>
+                                <Column width="12rem"> <Text text="Profile / Role"/>   </Column>
+                                <Column width="10rem"> <Text text="Critical Type"/>    </Column>
+                                <Column width="10rem"> <Text text="Scan"/>             </Column>
+                                <Column width="10rem"> <Text text="Action"/>           </Column>
+                            </columns>
+                            <items>
+                                <ColumnListItem>
+                                    <cells>
+                                        <HBox alignItems="Center">
+                                            <Avatar
+                                                initials="{path: 'sentinelgrc>userId', formatter: '.formatter.userInitials'}"
+                                                backgroundColor="Accent6"
+                                                displaySize="XS"
+                                                class="sapUiSmallMarginEnd"/>
+                                            <Link text="{sentinelgrc>userId}" press=".onUserPress"/>
+                                        </HBox>
+                                        <ObjectStatus
+                                            text="{sentinelgrc>profile}"
+                                            state="{= ${sentinelgrc>profile} === 'SAP_ALL' ? 'Error' : 'Warning'}"
+                                            class="sentinelMono"/>
+                                        <ObjectStatus
+                                            text="{sentinelgrc>criticalType}"
+                                            state="Error"
+                                            icon="sap-icon://alert"/>
+                                        <Text text="{sentinelgrc>scanId}" class="sentinelMono"/>
+                                        <Button
+                                            text="Request Removal"
+                                            type="{= ${sentinelgrc>profile} === 'SAP_ALL' ? 'Reject' : 'Default'}"
+                                            press=".onRequestRemoval"/>
+                                    </cells>
+                                </ColumnListItem>
+                            </items>
+                        </Table>
+                    </content>
+                </Panel>
+            </VBox>
+        </content>
+    </Page>
+</mvc:View>

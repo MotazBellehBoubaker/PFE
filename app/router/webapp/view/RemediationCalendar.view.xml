@@ -1,0 +1,115 @@
+<mvc:View
+    controllerName="sentinel.security.controller.RemediationCalendar"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:unified="sap.ui.unified"
+    xmlns="sap.m">
+
+    <Page showNavButton="false" class="sentinelPage">
+        <customHeader>
+            <Bar>
+                <contentLeft>
+                    <Title text="Remediation Calendar" level="H4"/>
+                </contentLeft>
+                <contentRight>
+                    <Button text="Schedule Task" icon="sap-icon://add" type="Emphasized" press=".handleAppointmentCreate"/>
+                    <Button text="Export" icon="sap-icon://download" press=".onExport" class="sapUiSmallMarginBegin"/>
+                </contentRight>
+            </Bar>
+        </customHeader>
+
+        <content>
+            <VBox class="sapUiMediumMargin">
+
+                <!-- KPI tiles -->
+                <HBox wrap="Wrap" class="sapUiSmallMarginBottom">
+                    <GenericTile id="tileScheduled" header="Scheduled" subheader="Pending remediation"
+                        frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content>
+                            <NumericContent id="numScheduled" value="0" valueColor="Critical" withMargin="false"/>
+                        </content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile id="tileInProgress" header="In Progress" subheader="Being executed"
+                        frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content>
+                            <NumericContent id="numInProgress" value="0" valueColor="Warning" withMargin="false"/>
+                        </content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile id="tileDone" header="Completed" subheader="This period"
+                        frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content>
+                            <NumericContent id="numDone" value="0" valueColor="Good" withMargin="false"/>
+                        </content></TileContent></tileContent>
+                    </GenericTile>
+                </HBox>
+
+                <!-- Planning Calendar — exact SAP sample pattern -->
+                <PlanningCalendar
+                    id="remediationCalendar"
+                    startDate="{remCal>/startDate}"
+                    rows="{remCal>/people}"
+                    appointmentsVisualization="Filled"
+                    appointmentSelect=".handleAppointmentSelect"
+                    intervalSelect=".handleAppointmentAddWithContext"
+                    showEmptyIntervalHeaders="false">
+                    <toolbarContent>
+                        <Title text="Basis Admin Remediation Schedule" titleStyle="H5"/>
+                        <ToolbarSpacer/>
+                        <Button icon="sap-icon://add" type="Emphasized"
+                            tooltip="Schedule new remediation task"
+                            press=".handleAppointmentCreate"/>
+                    </toolbarContent>
+                    <rows>
+                        <PlanningCalendarRow
+                            icon="{remCal>pic}"
+                            title="{remCal>name}"
+                            text="{remCal>role}"
+                            appointments="{path: 'remCal>appointments', templateShareable: false}"
+                            intervalHeaders="{path: 'remCal>headers', templateShareable: false}">
+                            <appointments>
+                                <unified:CalendarAppointment
+                                    startDate="{remCal>start}"
+                                    endDate="{remCal>end}"
+                                    title="{remCal>title}"
+                                    text="{remCal>info}"
+                                    type="{remCal>type}"
+                                    tentative="{remCal>tentative}"/>
+                            </appointments>
+                            <intervalHeaders>
+                                <unified:CalendarAppointment
+                                    startDate="{remCal>start}"
+                                    endDate="{remCal>end}"
+                                    title="{remCal>title}"
+                                    type="{remCal>type}"/>
+                            </intervalHeaders>
+                        </PlanningCalendarRow>
+                    </rows>
+                </PlanningCalendar>
+
+                <!-- Tasks Table -->
+                <Panel class="sapUiSmallMarginTop">
+                    <headerToolbar>
+                        <Toolbar>
+                            <Title text="All Remediation Tasks" level="H5"/>
+                        </Toolbar>
+                    </headerToolbar>
+                    <content>
+                        <Table id="allTasksList" growing="true" growingThreshold="20"
+                            noDataText="No remediation tasks found" mode="None" sticky="ColumnHeaders">
+                            <columns>
+                                <Column width="7rem"><Text text="Task ID"/></Column>
+                                <Column width="7rem"><Text text="Priority"/></Column>
+                                <Column><Text text="Action Required"/></Column>
+                                <Column width="10rem"><Text text="Affected User"/></Column>
+                                <Column width="9rem"><Text text="Violation Ref"/></Column>
+                                <Column width="10rem"><Text text="Scheduled"/></Column>
+                                <Column width="9rem"><Text text="Assigned To"/></Column>
+                                <Column width="8rem"><Text text="Status"/></Column>
+                            </columns>
+                        </Table>
+                    </content>
+                </Panel>
+
+            </VBox>
+        </content>
+    </Page>
+</mvc:View>
