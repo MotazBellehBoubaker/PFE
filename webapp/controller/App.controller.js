@@ -1,5 +1,6 @@
 sap.ui.define([
     "sentinel/security/controller/BaseController",
+    "sentinel/security/service/UserInfo",
     "sentinel/security/service/CopilotService",
     "sap/m/Popover",
     "sap/m/VBox",
@@ -15,7 +16,7 @@ sap.ui.define([
     "sap/ui/core/Icon",
     "sap/m/ObjectStatus"
 ], function (
-    BaseController, CopilotService,
+    BaseController, UserInfo, CopilotService,
     Popover, VBox, HBox, Text, Avatar, Button,
     Input, ScrollContainer, Title,
     FormattedText, MessageToast, Icon, ObjectStatus
@@ -31,6 +32,33 @@ sap.ui.define([
             );
             this._copilotHistory  = [];
             this._copilotMessages = [];
+            this._loadUserInfo();
+        },
+
+        _loadUserInfo: function () {
+            var that = this;
+            UserInfo.getUser().then(function (oUser) {
+                that._oCurrentUser = oUser;
+                var bIsAnalyst = oUser.isAnalyst !== false;
+                oUser.isAnalyst = bIsAnalyst;
+                var oAppState = that.getModel('appState');
+                if (oAppState) {
+                    oAppState.setProperty('/isAnalyst', bIsAnalyst);
+                }
+                // Update avatar initials in top bar
+                var oAvatar = that.byId('profileAvatar');
+                if (oAvatar) {
+                    oAvatar.setInitials(oUser.initials);
+                    oAvatar.setTooltip(oUser.name);
+                }
+                // Update connection status with real system
+                var oStatus = that.byId('connectionStatus');
+                if (oStatus) {
+                    oStatus.setText('RD1 · Connected');
+                }
+                // Update co-pilot greeting with real data
+                that._oCurrentUser = oUser;
+            });
         },
 
         onAfterRendering: function () {
@@ -58,12 +86,18 @@ sap.ui.define([
 
         // ── Navigation ────────────────────────────────────────────────────
         onNavItemSelect: function (oEvent) {
-            var oItem = oEvent.getParameter("item");
-            var sKey  = oItem.getKey ? oItem.getKey() : "";
-            var mMap  = {
-                overview:"overview", violations:"violations", users:"users",
-                critical:"critical", compliance:"compliance", rules:"rules",
-                scans:"scans", remediation:"remediation", alerts:"alerts", settings:"settings"
+            var oItem      = oEvent.getParameter('item');
+            var sKey       = oItem.getKey ? oItem.getKey() : '';
+            var bIsAnalyst = this.getModel('appState').getProperty('/isAnalyst');
+            var aBasisOnly = ['overview', 'scans', 'remediation'];
+            if (!bIsAnalyst && aBasisOnly.indexOf(sKey) === -1) {
+                sap.m.MessageToast.show('Access restricted to your role');
+                return;
+            }
+            var mMap = {
+                overview:'overview', violations:'violations', users:'users',
+                critical:'critical', compliance:'compliance', rules:'rules',
+                scans:'scans', remediation:'remediation', alerts:'alerts', settings:'settings'
             };
             if (mMap[sKey]) this.navTo(mMap[sKey]);
         },
@@ -99,6 +133,7 @@ sap.ui.define([
 
         _buildProfilePopover: function () {
             var that = this;
+            var oUser = that._oCurrentUser || { name: "Motaz Belleh Boubaker", email: "motaz.boubaker@aymax.fr", initials: "MB" };
             return new Popover({
                 showHeader : false,
                 placement  : "Bottom",
@@ -106,12 +141,12 @@ sap.ui.define([
                 content: [
                     new VBox({ items: [
                         new HBox({ alignItems: "Center", items: [
-                            new Avatar({ initials: "MB", backgroundColor: "Accent6", displaySize: "M" })
+                            new Avatar({ initials: oUser.initials, backgroundColor: "Accent6", displaySize: "M" })
                                 .addStyleClass("sapUiSmallMarginEnd"),
                             new VBox({ items: [
-                                new Title({ text: "Motaz Belleh Boubaker", level: "H5" }),
-                                new Text({ text: "SAP Security Intern",          wrapping: false }).addStyleClass("sapUiSmallText"),
-                                new Text({ text: "motaz.belleh@company.com",  wrapping: false }).addStyleClass("sapUiSmallText")
+                                new Title({ text: oUser.name, level: "H5" }),
+                                new Text({ text: "SAP Security Intern", wrapping: false }).addStyleClass("sapUiSmallText"),
+                                new Text({ text: oUser.email, wrapping: false }).addStyleClass("sapUiSmallText")
                             ]})
                         ]}).addStyleClass("sapUiSmallMarginBottom"),
 
@@ -130,7 +165,13 @@ sap.ui.define([
                         }).addStyleClass("sapUiSmallMarginBottom"),
 
                         new Button({ text: "Sign Out", icon: "sap-icon://log", width: "100%", type: "Reject",
-                            press: function () { that._oProfilePopover.close(); MessageToast.show("Signing out..."); }
+                            press: function () {
+                            that._oProfilePopover.close();
+                            MessageToast.show("Signing out...");
+                            setTimeout(function () {
+                                window.location.href = "/do/logout";
+                            }, 800);
+                        }
                         })
                     ]}).addStyleClass("sapUiSmallMargin")
                 ]

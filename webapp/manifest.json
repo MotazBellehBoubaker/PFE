@@ -130,7 +130,8 @@
             "execSummary": null,
             "execSummaryLoading": false,
             "triageInsights": null,
-            "triageLoading": false
+            "triageLoading": false,
+            "isAnalyst": false
           }
         }
       },

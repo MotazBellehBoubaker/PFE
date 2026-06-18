@@ -50,4 +50,7 @@ service SecurityService @(path: '/security-service') {
 
     function getViolationSummary() returns LargeString;
     function getComplianceTrend(limit: Integer) returns LargeString;
+    function userInfo() returns { name: String; email: String; given_name: String; family_name: String; isAnalyst: Boolean; role: String; };
 }
+
+

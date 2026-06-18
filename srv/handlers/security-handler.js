@@ -320,6 +320,28 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
             return JSON.stringify(aRows.reverse()); // oldest first for charts
         });
 
+        // ── userInfo ──────────────────────────────────────────────────
+        this.on('userInfo', async (req) => {
+            const user = req.user;
+            console.log("[DEBUG userInfo] user=", JSON.stringify({id: user.id, roles: user.roles, attr: user.attr, is: user.is}));
+            const rolesStr = JSON.stringify(user.roles || "") + JSON.stringify(user.attr || "") + (user.id || "");
+            console.log('[userInfo] user.roles:', JSON.stringify(user.roles), 'user.id:', user.id, 'user.attr:', JSON.stringify(user.attr));
+            const isAnalyst = (function() { return (
+                rolesStr.includes('SecurityAnalyst') || rolesStr.includes('CISO') || (rolesStr.includes('Admin') && !rolesStr.includes('BasisAdmin'))); })();
+            const id = user.id || 'motaz.boubaker@aymax.fr';
+            const parts = id.split(/[.@]/);
+            const given = parts[0] ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1) : 'User';
+            const family = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : '';
+            return {
+                name:        given + (family ? ' ' + family : ''),
+                email:       id,
+                given_name:  given,
+                family_name: family,
+                isAnalyst:   isAnalyst,
+                role:        isAnalyst ? 'Security Analyst' : 'Basis Admin'
+            };
+        });
+
         await super.init();
     }
 };

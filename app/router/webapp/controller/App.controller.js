@@ -39,6 +39,12 @@ sap.ui.define([
             var that = this;
             UserInfo.getUser().then(function (oUser) {
                 that._oCurrentUser = oUser;
+                var bIsAnalyst = oUser.isAnalyst !== false;
+                oUser.isAnalyst = bIsAnalyst;
+                var oAppState = that.getModel('appState');
+                if (oAppState) {
+                    oAppState.setProperty('/isAnalyst', bIsAnalyst);
+                }
                 // Update avatar initials in top bar
                 var oAvatar = that.byId('profileAvatar');
                 if (oAvatar) {
@@ -80,12 +86,18 @@ sap.ui.define([
 
         // ── Navigation ────────────────────────────────────────────────────
         onNavItemSelect: function (oEvent) {
-            var oItem = oEvent.getParameter("item");
-            var sKey  = oItem.getKey ? oItem.getKey() : "";
-            var mMap  = {
-                overview:"overview", violations:"violations", users:"users",
-                critical:"critical", compliance:"compliance", rules:"rules",
-                scans:"scans", remediation:"remediation", alerts:"alerts", settings:"settings"
+            var oItem      = oEvent.getParameter('item');
+            var sKey       = oItem.getKey ? oItem.getKey() : '';
+            var bIsAnalyst = this.getModel('appState').getProperty('/isAnalyst');
+            var aBasisOnly = ['overview', 'scans', 'remediation'];
+            if (!bIsAnalyst && aBasisOnly.indexOf(sKey) === -1) {
+                sap.m.MessageToast.show('Access restricted to your role');
+                return;
+            }
+            var mMap = {
+                overview:'overview', violations:'violations', users:'users',
+                critical:'critical', compliance:'compliance', rules:'rules',
+                scans:'scans', remediation:'remediation', alerts:'alerts', settings:'settings'
             };
             if (mMap[sKey]) this.navTo(mMap[sKey]);
         },

@@ -19,18 +19,18 @@
 
                 <!-- System Selector -->
                 <Label text="System:" class="sapUiSmallMarginEnd" design="Bold"/>
-                <Select id="systemSelect" change=".onSystemChange" width="160px">
+<Select id="systemSelect" change=".onSystemChange" width="180px" selectedKey="RD1">
                     <items>
-                        <core:Item key="PRD" text="PRD · Production"/>
+                        <core:Item key="RD1" text="RD1 · Development (MO)"/>
                         <core:Item key="QAS" text="QAS · Quality"/>
-                        <core:Item key="DEV" text="DEV · Development"/>
+                        <core:Item key="PRD" text="PRD · Production"/>
                     </items>
                 </Select>
 
                 <!-- Connection status -->
                 <ObjectStatus
                     id="connectionStatus"
-                    text="Connected"
+                    text="RD1 · Connected"
                     state="Success"
                     icon="sap-icon://connected"
                     class="sapUiSmallMarginBegin sapUiSmallMarginEnd"/>
@@ -63,15 +63,15 @@
             <tnt:SideNavigation id="sideNavigation" itemSelect=".onNavItemSelect">
                 <tnt:NavigationList>
                     <tnt:NavigationListItem key="overview"    text="Overview"      icon="sap-icon://home"/>
-                    <tnt:NavigationListItem key="violations"  text="Violations"    icon="sap-icon://alert"/>
-                    <tnt:NavigationListItem key="users"       text="Users and Risk" icon="sap-icon://group"/>
-                    <tnt:NavigationListItem key="critical"    text="Critical Roles" icon="sap-icon://warning2"/>
-                    <tnt:NavigationListItem key="compliance"  text="Compliance"    icon="sap-icon://checklist"/>
-                    <tnt:NavigationListItem key="rules"       text="SoD Rules"              icon="sap-icon://list"/>
+                    <tnt:NavigationListItem key="violations"  text="Violations"    icon="sap-icon://alert" visible="{appState>/isAnalyst}"/>
+                    <tnt:NavigationListItem key="users"       text="Users and Risk" icon="sap-icon://group" visible="{appState>/isAnalyst}"/>
+                    <tnt:NavigationListItem key="critical"    text="Critical Roles" icon="sap-icon://warning2" visible="{appState>/isAnalyst}"/>
+                    <tnt:NavigationListItem key="compliance"  text="Compliance"    icon="sap-icon://checklist" visible="{appState>/isAnalyst}"/>
+                    <tnt:NavigationListItem key="rules"       text="SoD Rules"              icon="sap-icon://list" visible="{appState>/isAnalyst}"/>
                     <tnt:NavigationListItem key="scans"       text="Scan History"           icon="sap-icon://electrocardiogram"/>
                     <tnt:NavigationListItem key="remediation" text="Remediation Calendar"   icon="sap-icon://appointment-2"/>
-                    <tnt:NavigationListItem key="alerts"      text="Alerts"                 icon="sap-icon://bell"/>
-                    <tnt:NavigationListItem key="settings"    text="Settings"               icon="sap-icon://settings"/>
+                    <tnt:NavigationListItem key="alerts"      text="Alerts"                 icon="sap-icon://bell" visible="{appState>/isAnalyst}"/>
+                    <tnt:NavigationListItem key="settings"    text="Settings"               icon="sap-icon://settings" visible="{appState>/isAnalyst}"/>
                 </tnt:NavigationList>
             </tnt:SideNavigation>
         </tnt:sideContent>

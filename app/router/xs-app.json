@@ -1,6 +1,10 @@
 {
   "welcomeFile": "/webapp/index.html",
   "authenticationMethod": "route",
+  "logout": {
+    "logoutEndpoint": "/do/logout",
+    "logoutPage": "/webapp/index.html"
+  },
   "routes": [
     {
       "source": "^/security-service/(.*)$",
