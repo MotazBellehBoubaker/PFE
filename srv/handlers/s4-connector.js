@@ -70,9 +70,22 @@ function buildUrl(sEntitySet, oParams = {}) {
 // ─────────────────────────────────────────────────────────────────
 async function callSentinelSrv(sEntitySet, oParams = {}) {
     try {
-        const sUrl   = buildUrl(sEntitySet, oParams);
-        console.log(`[S4Connector] GET ${sUrl}`);
-        const oData  = await httpGetViaProxy(sUrl);
+        const sPath  = `/sap/opu/odata/sap/${SENTINEL_SRV}/${sEntitySet}`;
+        const sQuery = new URLSearchParams({ ...oParams, '$format': 'json' }).toString();
+
+        // BTP CF: use cds.connect to call destination via CAP
+        if (!HTTP_PROXY) {
+            console.log(`[S4Connector] BTP CF mode calling ${sEntitySet}`);
+            const cds = require('@sap/cds');
+            const srv = await cds.connect.to('RD1_MO');
+            const res = await srv.send({ method: 'GET', path: `/sap/opu/odata/sap/${SENTINEL_SRV}/${sEntitySet}?${sQuery}` });
+            return res?.d?.results || res?.value || (Array.isArray(res) ? res : []);
+        }
+
+        // BAS mode: use proxy
+        const sUrl = buildUrl(sEntitySet, oParams);
+        console.log(`[S4Connector] BAS mode GET ${sUrl}`);
+        const oData = await httpGetViaProxy(sUrl);
         return oData?.d?.results || oData?.value || [];
     } catch (err) {
         console.error(`[S4Connector] Error calling ${sEntitySet}:`, err.message);

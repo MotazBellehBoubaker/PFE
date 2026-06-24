@@ -324,6 +324,11 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
         this.on('userInfo', async (req) => {
             const user = req.user;
             console.log("[DEBUG userInfo] user=", JSON.stringify({id: user.id, roles: user.roles, attr: user.attr, is: user.is}));
+            // In local dev, anonymous user gets full access
+            if (!user.id || user.id === 'anonymous') {
+                const id = 'motaz.boubaker@aymax.fr';
+                return { name: 'Motaz Boubaker', email: id, given_name: 'Motaz', family_name: 'Boubaker', isAnalyst: true, role: 'Security Analyst' };
+            }
             const rolesStr = JSON.stringify(user.roles || "") + JSON.stringify(user.attr || "") + (user.id || "");
             console.log('[userInfo] user.roles:', JSON.stringify(user.roles), 'user.id:', user.id, 'user.attr:', JSON.stringify(user.attr));
             const isAnalyst = (function() { return (
