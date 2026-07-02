@@ -24,13 +24,44 @@ sap.ui.define([
         _onRouteMatched: function () {
             this._oDetailModel.setProperty("/selectedViolation", null);
             this._oDetailModel.setProperty("/remediationText", null);
-            // Refresh the OData binding to get latest data
-            var oTable = this.byId("violationsTable");
-            if (oTable) {
-                oTable.getBinding("items").refresh();
-            }
+            this._loadScansAndFilter();
+        },
+        _loadScansAndFilter: function () {
+            var oModel = this.getModel("sentinelgrc");
+            var that = this;
+            // Load all complete scans for selector
+            oModel.bindList("/ScanResults", null, null, null, {
+                $orderby: "startedAt desc",
+                $filter: "status eq 'Complete'",
+                $select: "ID,scanCode,startedAt,violationsFound"
+            }).requestContexts(0, 20).then(function (aCtx) {
+                var aScans = aCtx.map(function (c) {
+                    var o = c.getObject();
+                    return {
+                        ID:       o.ID,
+                        scanCode: o.scanCode,
+                        text:     o.scanCode + " · " + (o.startedAt || "").substring(0, 10) + " (" + (o.violationsFound || 0) + " violations)",
+                        violations: o.violationsFound || 0
+                    };
+                });
+                that._oDetailModel.setProperty("/scans", aScans);
+                // Default to latest scan
+                if (aScans.length) {
+                    that._oDetailModel.setProperty("/selectedScanId", aScans[0].ID);
+                    that._oDetailModel.setProperty("/selectedScanCode", aScans[0].scanCode);
+                    that._applyFilters("", "", "", aScans[0].ID);
+                }
+            });
         },
 
+        onScanChange: function (oEvent) {
+            var oItem = oEvent.getParameter("selectedItem");
+            var sScanId   = oItem.getKey();
+            var sScanCode = oItem.getText().split(" · ")[0];
+            this._oDetailModel.setProperty("/selectedScanId",   sScanId);
+            this._oDetailModel.setProperty("/selectedScanCode", sScanCode);
+            this._applyFilters(this._sSearchQuery, this._sSeverityFilter, this._sStatusFilter, sScanId);
+        },
         onTableUpdateFinished: function (oEvent) {
             var iTotalCount = oEvent.getParameter("total");
             this._oDetailModel.setProperty("/totalCount", iTotalCount || 0);
@@ -51,7 +82,7 @@ sap.ui.define([
             this._applyFilters(this._sSearchQuery, this._sSeverityFilter, this._sStatusFilter);
         },
 
-        _applyFilters: function (sQuery, sSeverity, sStatus) {
+        _applyFilters: function (sQuery, sSeverity, sStatus, sScanId) {
             this._sSearchQuery = sQuery;
             var oTable = this.byId("violationsTable");
             var oBinding = oTable.getBinding("items");
@@ -74,6 +105,9 @@ sap.ui.define([
             }
             if (sStatus && sStatus !== "All") {
                 aFilters.push(new Filter("status", FilterOperator.EQ, sStatus));
+            }
+            if (sScanId) {
+                aFilters.push(new Filter("scanId", FilterOperator.EQ, sScanId));
             }
 
             oBinding.filter(aFilters.length > 0 ? new Filter({ filters: aFilters, and: true }) : []);

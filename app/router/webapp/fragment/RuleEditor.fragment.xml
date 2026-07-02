@@ -2,12 +2,10 @@
     xmlns="sap.m"
     xmlns:core="sap.ui.core"
     xmlns:f="sap.ui.layout.form">
-
     <Dialog
         id="ruleEditorDialog"
-        title="{= ${editor>/rule/id} === 'NEW' ? 'New SoD Rule' : 'Edit Rule ' + ${editor>/rule/id} }"
-        contentWidth="480px">
-
+        title="{= ${editor>/isNew} ? 'New SoD Rule' : 'Edit Rule · ' + ${editor>/rule/ruleCode} }"
+        contentWidth="500px">
         <content>
             <f:SimpleForm
                 layout="ResponsiveGridLayout"
@@ -15,38 +13,53 @@
                 columnsM="1"
                 class="sapUiSmallMargin">
                 <f:content>
+                    <Label text="Rule Code" required="true"/>
+                    <Input value="{editor>/rule/ruleCode}" placeholder="e.g. SOD-011" enabled="{editor>/isNew}"/>
                     <Label text="Role A (conflicting)" required="true"/>
                     <Input value="{editor>/rule/roleA}" placeholder="e.g. Z_VEND_CREATE"/>
-
                     <Label text="Role B (conflicting)" required="true"/>
                     <Input value="{editor>/rule/roleB}" placeholder="e.g. Z_PAYM_APPROVE"/>
-
                     <Label text="Severity" required="true"/>
-                    <Select selectedKey="{editor>/rule/severity}">
+                    <Select selectedKey="{editor>/rule/riskLevel}">
                         <items>
                             <core:Item key="High"   text="High"/>
                             <core:Item key="Medium" text="Medium"/>
                             <core:Item key="Low"    text="Low"/>
                         </items>
                     </Select>
-
-                    <Label text="Business Risk Description" required="true"/>
-                    <TextArea
-                        value="{editor>/rule/risk}"
-                        placeholder="Describe the business risk when both roles are assigned to the same user"
-                        rows="3"
-                        growing="false"/>
-
+                    <Label text="Category"/>
+                    <Select selectedKey="{editor>/rule/category}">
+                        <items>
+                            <core:Item key="Finance"     text="Finance"/>
+                            <core:Item key="Procurement" text="Procurement"/>
+                            <core:Item key="HR"          text="HR"/>
+                            <core:Item key="Basis"       text="Basis"/>
+                            <core:Item key="MasterData"  text="Master Data"/>
+                            <core:Item key="System"      text="System"/>
+                            <core:Item key="Access"      text="Access"/>
+                        </items>
+                    </Select>
+                    <Label text="Business Risk Description"/>
+                    <VBox width="100%">
+                        <TextArea
+                            value="{editor>/rule/riskDescription}"
+                            placeholder="Describe the business risk when both roles are assigned to the same user"
+                            rows="3"
+                            width="100%"/>
+                        <Button
+                            text="{= ${editor>/aiLoading} ? 'Generating…' : '✦ Generate with AI' }"
+                            enabled="{= !${editor>/aiLoading} }"
+                            press=".onAuthorWithAI"
+                            class="sapUiTinyMarginTop"/>
+                    </VBox>
                     <Label text="Active"/>
-                    <Switch state="{editor>/rule/enabled}"/>
+                    <Switch state="{editor>/rule/active}"/>
                 </f:content>
             </f:SimpleForm>
         </content>
-
         <buttons>
             <Button text="Save"   type="Emphasized" press=".onSaveRule"/>
             <Button text="Cancel"                   press=".onCancelRule"/>
         </buttons>
     </Dialog>
-
 </core:FragmentDefinition>

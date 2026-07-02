@@ -106,11 +106,11 @@
                         <content>
                             <VBox class="sapUiSmallMargin">
                                     <Label text="Service Plan"/>   <Text text="Application"/>
-                                    <Label text="Token URL"/>      <Text text="https://company.auth.eu10.hana.ondemand.com" class="sentinelMono sapUiSmallText"/>
+                                    <Label text="Token URL"/>      <Text text="https://aymax-consulting-dev-azure-442muemm.authentication.eu20.hana.ondemand.com" class="sentinelMono sapUiSmallText"/>
                                     <Label text="Scopes"/>
                                     <HBox>
-                                        <ObjectStatus text="sentinel.read"  state="Information" class="sapUiSmallMarginEnd"/>
-                                        <ObjectStatus text="sentinel.admin" state="Information"/>
+                                        <ObjectStatus text="SentinelGRC.SecurityAnalyst"  state="Information" class="sapUiSmallMarginEnd"/>
+                                        <ObjectStatus text="SentinelGRC.Admin" state="Information"/>
                                     </HBox>
                                     <Label text="Status"/>
                                     <ObjectStatus text="Configured" state="Success" icon="sap-icon://accept"/>

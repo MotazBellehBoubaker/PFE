@@ -210,7 +210,7 @@
                         <Toolbar>
                             <core:Icon src="sap-icon://ai" color="Highlight" class="sapUiSmallMarginEnd"/>
                             <Title text="Executive Briefing" level="H5"/>
-                            <ObjectStatus text="AI-powered · Claude" state="Information" class="sapUiSmallMarginBegin"/>
+                            <ObjectStatus text="AI-powered" state="Information" class="sapUiSmallMarginBegin"/>
                             <ToolbarSpacer/>
                             <Button
                                 text="{= ${appState>/execSummaryLoading} ? 'Generating...' : (${appState>/execSummary} ? 'Regenerate' : 'Generate Briefing') }"
@@ -237,7 +237,7 @@
                         <Toolbar>
                             <core:Icon src="sap-icon://ai" color="Highlight" class="sapUiSmallMarginEnd"/>
                             <Title text="Smart Triage" level="H5"/>
-                            <ObjectStatus text="AI-powered · Claude" state="Information" class="sapUiSmallMarginBegin"/>
+                            <ObjectStatus text="AI-powered" state="Information" class="sapUiSmallMarginBegin"/>
                             <ToolbarSpacer/>
                             <Button
                                 text="{= ${appState>/triageLoading} ? 'Analyzing...' : (${appState>/triageInsights} ? 'Re-cluster' : 'Cluster Violations') }"

@@ -54,6 +54,21 @@
                         <Toolbar>
                             <Title text="Violations" level="H5"/>
                             <ToolbarSpacer/>
+                            <Label text="Scan:"/>
+                            <Select
+                                id="scanSelector"
+                                width="280px"
+                                change=".onScanChange"
+                                items="{
+                                    path: 'detail>/scans',
+                                    templateShareable: false
+                                }">
+                                <core:Item
+                                    xmlns:core="sap.ui.core"
+                                    key="{detail>ID}"
+                                    text="{detail>text}"/>
+                            </Select>
+                            <ToolbarSpacer/>
                             <Text text="{= ${detail>/totalCount} + ' items'}"/>
                         </Toolbar>
                     </headerToolbar>

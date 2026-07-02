@@ -79,10 +79,16 @@
                                         <Switch
                                             state="{sentinelgrc>active}"
                                             change=".onToggleRule"/>
-                                        <Button
-                                            icon="sap-icon://edit"
-                                            type="Transparent"
-                                            press=".onEditRule"/>
+                                        <HBox>
+                                            <Button
+                                                icon="sap-icon://edit"
+                                                type="Transparent"
+                                                press=".onEditRule"/>
+                                            <Button
+                                                icon="sap-icon://delete"
+                                                type="Transparent"
+                                                press=".onDeleteRule"/>
+                                        </HBox>
                                     </cells>
                                 </ColumnListItem>
                             </items>

@@ -1,5 +1,5 @@
 {
-  "S4_DESTINATION_NAME": "S4HANA_ON_PREM",
+  "S4_DESTINATION_NAME": "RD1_MO",
   "VCAP_SERVICES": {
     "hana": [
       {
@@ -7,13 +7,13 @@
         "label": "hana",
         "plan": "hdi-shared",
         "credentials": {
-          "url":      "jdbc:sap://YOUR_HANA_HOST:443?encrypt=true&validateCertificate=true&currentschema=YOUR_SCHEMA",
-          "host":     "YOUR_HANA_HOST",
+          "host":     "1f922522-a3bf-4d14-9677-982a340b61b7.hna1.prod-eu20.hanacloud.ondemand.com",
           "port":     "443",
-          "schema":   "YOUR_SCHEMA",
-          "user":     "YOUR_HANA_USER",
-          "password": "YOUR_HANA_PASSWORD",
-          "driver":   "com.sap.db.jdbc.Driver"
+          "driver":   "com.sap.db.jdbc.Driver",
+          "url":      "jdbc:sap://1f922522-a3bf-4d14-9677-982a340b61b7.hna1.prod-eu20.hanacloud.ondemand.com:443?encrypt=true&validateCertificate=true",
+          "user":     "REPLACE_WITH_SCHEMA_USER",
+          "password": "REPLACE_WITH_SCHEMA_PASSWORD",
+          "schema":   "REPLACE_WITH_SCHEMA"
         }
       }
     ],
@@ -23,13 +23,14 @@
         "label": "xsuaa",
         "plan": "application",
         "credentials": {
-          "xsappname":      "sentinelgrc!YOUR_TENANT_ID",
-          "tenant-mode":    "dedicated",
-          "clientid":       "sb-sentinelgrc!YOUR_TENANT_ID",
-          "clientsecret":   "YOUR_CLIENT_SECRET",
-          "url":            "https://YOUR_SUBACCOUNT.authentication.eu20.hana.ondemand.com",
-          "identityzone":   "YOUR_SUBACCOUNT",
-          "identityzoneid": "YOUR_ZONE_ID"
+          "xsappname":      "sentinelgrc!t39023",
+          "clientid":       "sb-sentinelgrc!t39023",
+          "clientsecret":   "82c4dfe9-d5ab-4881-be7a-1865be04de40$uGlNkiuQj4O0v5js4spjk0InOi4Du8yG4tBV7jNMVms=",
+          "url":            "https://aymax-consulting-dev-azure-442muemm.authentication.eu20.hana.ondemand.com",
+          "identityzone":   "aymax-consulting-dev-azure-442muemm",
+          "identityzoneid": "f6e04827-3af9-44de-a4b7-4840b1a1efc2",
+          "tenantid":       "f6e04827-3af9-44de-a4b7-4840b1a1efc2",
+          "uaadomain":      "authentication.eu20.hana.ondemand.com"
         }
       }
     ],
@@ -39,10 +40,10 @@
         "label": "destination",
         "plan": "lite",
         "credentials": {
-          "clientid":     "YOUR_DEST_CLIENT_ID",
-          "clientsecret": "YOUR_DEST_CLIENT_SECRET",
+          "clientid":     "REPLACE_WITH_DEST_CLIENTID",
+          "clientsecret": "REPLACE_WITH_DEST_SECRET",
           "uri":          "https://destination-configuration.cfapps.eu20.hana.ondemand.com",
-          "url":          "https://YOUR_SUBACCOUNT.authentication.eu20.hana.ondemand.com"
+          "url":          "https://aymax-consulting-dev-azure-442muemm.authentication.eu20.hana.ondemand.com"
         }
       }
     ]

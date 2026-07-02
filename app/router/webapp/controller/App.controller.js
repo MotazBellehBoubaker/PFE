@@ -194,6 +194,28 @@ sap.ui.define([
             if (!this._copilotBuilt) {
                 this._buildCopilotPanel();
             }
+            // Pass real scan data to CopilotService from OData
+            var oModel = this.getModel('sentinelgrc');
+            if (oModel) {
+                oModel.bindList('/ScanResults', null, null, null, {
+                    $orderby: 'startedAt desc'
+                }).requestContexts(0, 1).then(function(aCtx) {
+                    if (aCtx.length) {
+                        var o = aCtx[0].getObject();
+                        CopilotService.setContext({
+                            scanCode:        o.scanCode        || 'SC-2026-001',
+                            violations:      o.violationsFound || 0,
+                            riskScore:       o.riskScore       || 0,
+                            complianceScore: o.complianceScore || 0,
+                            usersScanned:    o.usersScanned    || 0,
+                            highCount:       o.highCount       || 0,
+                            mediumCount:     o.mediumCount     || 0,
+                            lowCount:        o.lowCount        || 0,
+                            lastScanAt:      o.completedAt     || null
+                        });
+                    }
+                });
+            }
             // Reset conversation
             this._copilotHistory  = [];
             this._copilotMessages = [];
@@ -220,11 +242,12 @@ sap.ui.define([
 
             // Message scroll area
             this._oMsgContainer = new VBox({ width: "100%" });
-            var oScroll = new ScrollContainer({
+            this._oScrollContainer = new ScrollContainer({
                 vertical: true, horizontal: false,
                 height: "100%", width: "100%",
                 content: [this._oMsgContainer]
             }).addStyleClass("sentinelChatScroll");
+            var oScroll = this._oScrollContainer;
 
             // Suggested chips
             var oSuggLabel = new Text({ text: "SUGGESTED QUESTIONS" })
@@ -369,9 +392,11 @@ sap.ui.define([
 
             // Scroll to bottom
             setTimeout(function () {
-                var o = this._oMsgContainer.getParent();
-                if (o && o.scrollTo) o.scrollTo(0, 99999);
-            }.bind(this), 80);
+                if (this._oScrollContainer) {
+                    var oDom = this._oScrollContainer.getDomRef();
+                    if (oDom) oDom.scrollTop = oDom.scrollHeight;
+                }
+            }.bind(this), 200);
         },
 
         _esc: function (s) {

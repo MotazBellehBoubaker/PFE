@@ -31,6 +31,16 @@
         },
         "[production]": {
           "kind": "xsuaa"
+        },
+        "[development]": {
+          "kind": "mocked",
+          "users": {
+            "motaz.boubaker@aymax.fr": {
+              "roles": [
+                "SecurityAnalyst"
+              ]
+            }
+          }
         }
       },
       "db": {

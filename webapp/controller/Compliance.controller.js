@@ -38,8 +38,7 @@ sap.ui.define([
         _loadLatestScanScore: function () {
             var oModel = this.getModel("sentinelgrc");
             var oBinding = oModel.bindList("/ScanResults", null, null, null, {
-                $orderby: "startedAt desc",
-                $top: 1
+                $orderby: "startedAt desc"
             });
             oBinding.requestContexts(0, 1).then(function (aContexts) {
                 if (aContexts.length) {

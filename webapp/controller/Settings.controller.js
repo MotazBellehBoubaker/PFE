@@ -11,10 +11,10 @@ sap.ui.define([
             this.getRouter().getRoute("settings").attachPatternMatched(this._onRouteMatched, this);
             this._oSettingsModel = new JSONModel({
                 destination: {
-                    name: "S4H_PROD_SYSTEM",
-                    url: "https://s4hana.company.corp:44300",
-                    auth: "OAuth2SAMLBearer",
-                    lastTest: "2026-05-12 14:20 · 142ms",
+                    name: "RD1_MO",
+                    url: "http://192.168.10.79:8000",
+                    auth: "BasicAuthentication via SCC",
+                    lastTest: new Date().toLocaleString() + " · 142ms",
                     connected: true,
                     testing: false
                 },

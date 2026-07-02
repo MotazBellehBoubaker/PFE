@@ -19,7 +19,7 @@
                 <!-- KPI row -->
                 <HBox wrap="Wrap" class="sapUiSmallMarginBottom">
                     <GenericTile header="Sent Today"     subheader="Across all channels"       frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
-                        <tileContent><TileContent><content><NumericContent value="6"    valueColor="Neutral" withMargin="false"/></content></TileContent></tileContent>
+                        <tileContent><TileContent><content><NumericContent value="{alerts>/sentToday}" valueColor="Neutral" withMargin="false"/></content></TileContent></tileContent>
                     </GenericTile>
                     <GenericTile header="Delivery Rate"  subheader="Last 24h · no failures"    frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
                         <tileContent><TileContent unit="%"><content><NumericContent value="100" valueColor="Good"    withMargin="false"/></content></TileContent></tileContent>
