@@ -117,6 +117,18 @@ sap.ui.define([], function () {
          * @param {string} sType
          * @returns {string}
          */
+        formatDateOnly: function (sDate) {
+            if (!sDate) return '—';
+            try {
+                var d = new Date(sDate);
+                if (isNaN(d.getTime()) || d.getFullYear() < 2000) return '—';
+                return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            } catch(e) { return '—'; }
+        },
+        userTypeLabel: function (sType) {
+            var oMap = { 'A': 'Dialog', 'B': 'System', 'C': 'Communication', 'S': 'Service', 'L': 'Reference', '': 'Dialog' };
+            return oMap[sType] || sType || 'Dialog';
+        },
         userTypeState: function (sType) {
             switch (sType) {
                 case "System":  return "Warning";

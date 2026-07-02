@@ -18,10 +18,23 @@ sap.ui.define([
         },
 
         _onRouteMatched: function () {
-            var oTable = this.byId("criticalRolesTable");
-            if (oTable) {
-                oTable.getBinding("items").refresh();
-            }
+            var that = this;
+            var oModel = this.getModel("sentinelgrc");
+            // Find latest scan ID and filter critical roles by it
+            oModel.bindList("/ScanResults", null, null, null, {
+                $orderby: "startedAt desc"
+            }).requestContexts(0, 1).then(function (aCtx) {
+                if (!aCtx.length) return;
+                var sScanId = aCtx[0].getObject().ID;
+                var oTable = that.byId("criticalRolesTable");
+                if (oTable && oTable.getBinding("items")) {
+                    var Filter = sap.ui.model.Filter;
+                    var FilterOperator = sap.ui.model.FilterOperator;
+                    oTable.getBinding("items").filter([
+                        new Filter("scanId", FilterOperator.EQ, sScanId)
+                    ]);
+                }
+            });
         },
 
         onTableUpdateFinished: function () {

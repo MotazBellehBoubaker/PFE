@@ -48,6 +48,27 @@ sap.ui.define([
                 this._oOvState.setProperty("/usersScanned",    o.usersScanned     || 0);
                 this._oOvState.setProperty("/violationSubheader",
                     (o.highCount || 0) + " High · " + (o.mediumCount || 0) + " Med · " + (o.lowCount || 0) + " Low");
+                // Update CopilotService with real data for AI features
+                CopilotService.setContext({
+                    scanCode:        o.scanCode        || 'SC-2026-001',
+                    violations:      o.violationsFound || 0,
+                    riskScore:       o.riskScore       || 0,
+                    complianceScore: o.complianceScore || 0,
+                    usersScanned:    o.usersScanned    || 0,
+                    highCount:       o.highCount       || 0,
+                    mediumCount:     o.mediumCount     || 0,
+                    lowCount:        o.lowCount        || 0,
+                    lastScanAt:      o.completedAt     || null
+                });
+                // Filter violations list to latest scan only
+                var oViolList = this.byId("recentViolationsList");
+                if (oViolList && oViolList.getBinding("items") && o.ID) {
+                    var Filter = sap.ui.model.Filter;
+                    var FilterOperator = sap.ui.model.FilterOperator;
+                    oViolList.getBinding("items").filter([
+                        new Filter("scanId", FilterOperator.EQ, o.ID)
+                    ]);
+                }
             }.bind(this));
 
             // Load all scans for trend

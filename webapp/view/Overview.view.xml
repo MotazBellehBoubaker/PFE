@@ -288,6 +288,7 @@
                     </headerToolbar>
                     <content>
                         <Table
+                            id="recentViolationsList"
                             items="{
                                 path: 'sentinelgrc>/Violations',
                                 parameters: { $orderby: 'detectedAt desc' }

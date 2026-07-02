@@ -137,16 +137,16 @@ function detectCriticalRoles(aRoleAssignments, aCriticalProfiles, aFirefighterRo
  */
 function calculateUserRiskScores(aViolations, aCriticalRoles) {
     const oScores = {};
-    const weights = { High: 3, Medium: 2, Low: 1 };
+    const weights = { High: 25, Medium: 12, Low: 5 };
 
     aViolations.forEach(v => {
         if (!oScores[v.userId]) oScores[v.userId] = 0;
-        oScores[v.userId] += weights[v.severity] || 1;
+        oScores[v.userId] += weights[v.severity] || 5;
     });
 
     aCriticalRoles.forEach(r => {
         if (!oScores[r.userId]) oScores[r.userId] = 0;
-        oScores[r.userId] += 5;
+        oScores[r.userId] += 30;
     });
 
     // Cap at 100

@@ -80,9 +80,7 @@
                             <columns>
                                 <Column>               <Text text="User"/>       </Column>
                                 <Column width="7rem">  <Text text="Type"/>       </Column>
-                                <Column width="9rem">  <Text text="Department"/> </Column>
                                 <Column width="14rem"> <Text text="Risk Score"/> </Column>
-                                <Column width="7rem">  <Text text="Status"/>     </Column>
                                 <Column width="10rem"> <Text text="Last Login"/> </Column>
                             </columns>
                             <items>
@@ -100,18 +98,14 @@
                                                 class="sentinelMono"/>
                                         </HBox>
                                         <ObjectStatus
-                                            text="{sentinelgrc>userType}"
+                                            text="{path: 'sentinelgrc>userType', formatter: '.formatter.userTypeLabel'}"
                                             state="{path: 'sentinelgrc>userType', formatter: '.formatter.userTypeState'}"/>
-                                        <Text text="{sentinelgrc>department}"/>
                                         <ProgressIndicator
                                             percentValue="{sentinelgrc>riskScore}"
                                             displayValue="{sentinelgrc>riskScore}"
                                             width="130px"
                                             state="{path: 'sentinelgrc>riskScore', formatter: '.formatter.riskScoreState'}"/>
-                                        <ObjectStatus
-                                            text="{= ${sentinelgrc>locked} ? 'Locked' : 'Active'}"
-                                            state="{= ${sentinelgrc>locked} ? 'Warning' : 'Success'}"/>
-                                        <Text text="{path: 'sentinelgrc>lastLogin', formatter: '.formatter.formatDate'}" class="sentinelMono"/>
+                                        <Text text="{path: 'sentinelgrc>lastLogin', formatter: '.formatter.formatDateOnly'}" class="sentinelMono"/>
                                     </cells>
                                 </ColumnListItem>
                             </items>

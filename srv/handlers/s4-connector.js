@@ -99,11 +99,12 @@ async function callSentinelSrv(sEntitySet, oParams = {}) {
 async function extractUsers() {
     console.log('[S4Connector] Extracting users from UserSet (USR02)...');
     const aRaw = await callSentinelSrv('UserSet', { $top: 10000 });
+    if (aRaw.length) console.log('[S4Connector] Sample Uflag values:', aRaw.slice(0,3).map(u => u.Bname + ':' + u.Uflag));
     const aUsers = aRaw.map(u => ({
         userId:    u.Bname,
         userName:  u.Bname,
         userType:  u.Ustyp  || 'A',
-        locked:    u.Uflag === '64' || false,
+        locked:    u.Uflag === '64' || u.Uflag === 64 || String(u.Uflag || '').includes('64') || false,
         lastLogin: u.Trdat  ? parseAbapDate(u.Trdat)  : null,
         validFrom: u.Gltgv  ? parseAbapDate(u.Gltgv)  : null,
         validTo:   u.Gltgb  ? parseAbapDate(u.Gltgb)  : null
