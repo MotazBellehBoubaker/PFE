@@ -23,6 +23,7 @@ service SecurityService @(path: '/security-service') {
     };
 
     action acknowledgeViolation(violationId: UUID, mitigatingControl: String) returns Boolean;
+    action openTicket(violationId: UUID) returns { ticketKey: String; ticketUrl: String; };
     action resolveViolation(violationId: UUID) returns Boolean;
 
     action saveRemediationTask(

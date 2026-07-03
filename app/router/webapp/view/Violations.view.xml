@@ -48,8 +48,12 @@
                     </Select>
                 </Toolbar>
 
-                <!-- Violations Table -->
+                <!-- Violations Table + Detail side by side -->
+                <HBox width="100%" alignItems="Stretch" renderType="Bare">
                 <Panel>
+                    <layoutData>
+                        <FlexItemData growFactor="3" baseSize="0" shrinkFactor="1"/>
+                    </layoutData>
                     <headerToolbar>
                         <Toolbar>
                             <Title text="Violations" level="H5"/>
@@ -122,11 +126,14 @@
                     </content>
                 </Panel>
 
-                <!-- Detail Panel -->
+                <!-- Detail Panel (right side) -->
                 <Panel
                     id="detailPanel"
                     visible="{= !!${detail>/selectedViolation} }"
-                    class="sapUiSmallMarginTop">
+                    class="sapUiSmallMarginBegin">
+                    <layoutData>
+                        <FlexItemData growFactor="2" baseSize="0" shrinkFactor="1"/>
+                    </layoutData>
                     <headerToolbar>
                         <Toolbar>
                             <Title text="{detail>/selectedViolation/ID}" level="H5" class="sentinelMono"/>
@@ -134,6 +141,11 @@
                             <ObjectStatus
                                 text="{detail>/selectedViolation/severity}"
                                 state="{path: 'detail>/selectedViolation/severity', formatter: '.formatter.severityState'}"/>
+                            <Button
+                                icon="sap-icon://decline"
+                                type="Transparent"
+                                tooltip="Close details"
+                                press=".onCloseDetail"/>
                         </Toolbar>
                     </headerToolbar>
                     <content>
@@ -177,7 +189,7 @@
                             </HBox>
 
                             <!-- AI Remediation -->
-                            <Panel expandable="true" expanded="false">
+                            <Panel id="aiPlaybookPanel" expandable="true" expanded="false">
                                 <headerToolbar>
                                     <Toolbar>
                                         <Title text="AI Remediation Playbook" level="H6"/>
@@ -205,6 +217,7 @@
                         </VBox>
                     </content>
                 </Panel>
+                </HBox>
 
             </VBox>
         </content>

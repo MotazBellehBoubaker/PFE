@@ -202,6 +202,89 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
             }
         });
 
+        // ── openTicket (Jira integration) ────────────────────────────────
+        this.on('openTicket', async (req) => {
+            const { violationId } = req.data;
+            const oViol = await db.run(
+                SELECT.one.from('sentinel.db.Violation').where({ ID: violationId })
+            );
+            if (!oViol) return req.error(404, 'Violation not found');
+
+            const sJiraUrl = (process.env.JIRA_URL || '').replace(/\/$/, '');
+            const sEmail   = process.env.JIRA_EMAIL || '';
+            const sToken   = process.env.JIRA_TOKEN || '';
+            const sProject = process.env.JIRA_PROJECT || 'KAN';
+            if (!sJiraUrl || !sToken) return req.error(500, 'Jira not configured');
+
+            const sAuth = Buffer.from(sEmail + ':' + sToken).toString('base64');
+            const oBody = {
+                fields: {
+                    project:   { key: sProject },
+                    issuetype: { name: 'Task' },
+                    summary:   '[SentinelGRC] ' + oViol.severity + ' SoD Violation: ' +
+                               oViol.userId + ' — ' + oViol.roleA + ' + ' + oViol.roleB,
+                    description: {
+                        type: 'doc', version: 1,
+                        content: [
+                            { type: 'paragraph', content: [{ type: 'text',
+                                text: 'Violation detected by SentinelGRC automated scan.' }] },
+                            { type: 'paragraph', content: [{ type: 'text',
+                                text: 'User: ' + oViol.userId + ' (' + (oViol.userName || '') + ')' }] },
+                            { type: 'paragraph', content: [{ type: 'text',
+                                text: 'Conflicting roles: ' + oViol.roleA + ' + ' + oViol.roleB }] },
+                            { type: 'paragraph', content: [{ type: 'text',
+                                text: 'Severity: ' + oViol.severity }] },
+                            { type: 'paragraph', content: [{ type: 'text',
+                                text: 'Action required: remove one of the conflicting roles via SU01 and confirm with SU53.' }] }
+                        ]
+                    }
+                }
+            };
+
+            const https2 = require('https');
+            const oUrl = new URL(sJiraUrl + '/rest/api/3/issue');
+            const sResp = await new Promise((resolve, reject) => {
+                const r = https2.request({
+                    hostname: oUrl.hostname,
+                    path:     oUrl.pathname,
+                    method:   'POST',
+                    headers: {
+                        'Authorization': 'Basic ' + sAuth,
+                        'Content-Type':  'application/json',
+                        'Accept':        'application/json'
+                    }
+                }, res => {
+                    let d = '';
+                    res.on('data', c => d += c);
+                    res.on('end', () => {
+                        if (res.statusCode >= 200 && res.statusCode < 300) resolve(d);
+                        else reject(new Error('Jira ' + res.statusCode + ': ' + d.slice(0, 300)));
+                    });
+                });
+                r.on('error', reject);
+                r.setTimeout(30000, () => r.destroy(new Error('Jira timeout')));
+                r.write(JSON.stringify(oBody));
+                r.end();
+            });
+            const oResp = JSON.parse(sResp);
+            console.log('[Jira] Created ticket', oResp.key);
+
+            // Audit log (status update wrapped so enum mismatch never breaks ticket creation)
+            try {
+                await db.run(INSERT.into('sentinel.db.AuditLog').entries({
+                    ID: cds.utils.uuid(), timestamp: new Date().toISOString(),
+                    action: 'TICKET', entityType: 'Violation', entityId: violationId,
+                    performedBy: req.user?.id || 'system',
+                    details: JSON.stringify({ ticket: oResp.key })
+                }));
+            } catch (e) { console.log('[Jira] audit log skipped:', e.message); }
+
+            return {
+                ticketKey: oResp.key,
+                ticketUrl: sJiraUrl + '/browse/' + oResp.key
+            };
+        });
+
         // ── acknowledgeViolation ─────────────────────────────────────────
         this.on('acknowledgeViolation', async (req) => {
             const { violationId, mitigatingControl } = req.data;

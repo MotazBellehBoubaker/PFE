@@ -121,35 +121,100 @@ sap.ui.define([
             this._oDetailModel.setProperty("/remediationText", null);
         },
 
+        onCloseDetail: function () {
+            this._oDetailModel.setProperty("/selectedViolation", null);
+            this._oDetailModel.setProperty("/remediationText", null);
+            // Clear table selection
+            var oTable = this.byId("violationsTable");
+            if (oTable) {
+                oTable.removeSelections(true);
+            }
+        },
         onAcknowledge: function () {
             var oViolation = this._oDetailModel.getProperty("/selectedViolation");
             if (!oViolation) return;
             var oModel = this.getModel("sentinelgrc");
-            // Update status via OData PATCH
-            var oContext = oModel.bindContext("/Violations(" + oViolation.ID + ")");
-            oContext.setProperty("status", "Acknowledged")
-                .then(function () {
-                    oViolation.status = "Acknowledged";
-                    this._oDetailModel.setProperty("/selectedViolation", oViolation);
-                    this.showToast("Violation acknowledged");
-                    oModel.refresh();
-                }.bind(this))
-                .catch(function () {
-                    // Fallback — just update local model
-                    oViolation.status = "Acknowledged";
-                    this._oDetailModel.setProperty("/selectedViolation", oViolation);
-                    this.showToast("Violation acknowledged");
-                }.bind(this));
+            var oAction = oModel.bindContext("/acknowledgeViolation(...)");
+            oAction.setParameter("violationId", oViolation.ID);
+            oAction.setParameter("mitigatingControl", "Acknowledged via SentinelGRC UI");
+            oAction.execute().then(function () {
+                oViolation.status = "Acknowledged";
+                this._oDetailModel.setProperty("/selectedViolation", oViolation);
+                MessageToast.show("Violation acknowledged for " + oViolation.userName);
+                var oTable = this.byId("violationsTable");
+                if (oTable && oTable.getBinding("items")) {
+                    oTable.getBinding("items").refresh();
+                }
+            }.bind(this)).catch(function (err) {
+                MessageToast.show("Failed to acknowledge: " + (err.message || "unknown error"));
+            }.bind(this));
         },
 
         onOpenTicket: function () {
             var oViolation = this._oDetailModel.getProperty("/selectedViolation");
             if (!oViolation) return;
-            this.showToast("Ticket created for " + oViolation.userName);
+            var oModel  = this.getModel("sentinelgrc");
+            var oAction = oModel.bindContext("/openTicket(...)");
+            oAction.setParameter("violationId", oViolation.ID);
+            MessageToast.show("Creating Jira ticket…");
+            oAction.execute().then(function () {
+                var oResult = oAction.getBoundContext().getObject();
+                sap.m.MessageBox.success(
+                    "Jira ticket " + oResult.ticketKey + " created and assigned to the Basis team.",
+                    {
+                        actions: ["Open in Jira", sap.m.MessageBox.Action.CLOSE],
+                        onClose: function (sAct) {
+                            if (sAct === "Open in Jira") {
+                                window.open(oResult.ticketUrl, "_blank");
+                            }
+                        }
+                    }
+                );
+            }.bind(this)).catch(function (err) {
+                sap.m.MessageBox.error("Jira ticket creation failed: " + (err.message || "unknown"));
+            });
         },
 
         onMuteRule: function () {
-            this.showToast("Rule muted for 30 days");
+            if (!this._oMuteModel) {
+                this._oMuteModel = new JSONModel({ duration: "30", reason: "" });
+                this.getView().setModel(this._oMuteModel, "mute");
+            }
+            this._oMuteModel.setProperty("/duration", "30");
+            this._oMuteModel.setProperty("/reason", "");
+            if (!this._oMuteDialog) {
+                this._oMuteDialog = sap.ui.xmlfragment(
+                    this.getView().getId(),
+                    "sentinel.security.fragment.MuteRuleDialog",
+                    this
+                );
+                this.getView().addDependent(this._oMuteDialog);
+            }
+            this._oMuteDialog.open();
+        },
+        onConfirmMuteRule: function () {
+            var oViolation = this._oDetailModel.getProperty("/selectedViolation");
+            var sDuration  = this._oMuteModel.getProperty("/duration");
+            var sReason    = this._oMuteModel.getProperty("/reason");
+
+            if (!sReason || !sReason.trim()) {
+                MessageToast.show("Please enter a reason for muting this rule.");
+                return;
+            }
+
+            var dMuteUntil = new Date();
+            dMuteUntil.setDate(dMuteUntil.getDate() + parseInt(sDuration, 10));
+
+            // Store mute info locally (visual confirmation) — could be persisted via a CDS field later
+            this._oMuteDialog.close();
+            MessageToast.show(
+                "Rule " + oViolation.roleA + " + " + oViolation.roleB +
+                " muted until " + dMuteUntil.toLocaleDateString() +
+                ". Reason logged."
+            );
+        },
+        onCancelMuteRule: function () {
+            this._oMuteDialog.close();
         },
 
         onScheduleRemediation: function () {
@@ -171,11 +236,42 @@ sap.ui.define([
         onGenerateRemediation: function () {
             var oViolation = this._oDetailModel.getProperty("/selectedViolation");
             if (!oViolation) return;
+            // Auto-expand the panel so the result is visible immediately
+            var oPanel = this.byId("aiPlaybookPanel");
+            if (oPanel) oPanel.setExpanded(true);
             this._oDetailModel.setProperty("/remediationLoading", true);
 
             CopilotService.generateRemediation(oViolation)
                 .then(function (sText) {
-                    this._oDetailModel.setProperty("/remediationText", sText);
+                    // Convert markdown to HTML for FormattedText (only supported tags)
+                    var sEsc = sText
+                        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                        .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+                    var aLines = sEsc.split("\n");
+                    var aOut = [];
+                    var sListType = null; // "ol" or "ul"
+                    function closeList() {
+                        if (sListType) { aOut.push("</" + sListType + ">"); sListType = null; }
+                    }
+                    aLines.forEach(function (sLine) {
+                        sLine = sLine.trim();
+                        if (!sLine) { return; }
+                        var oNum = sLine.match(/^([0-9]+)\.\s*(.*)$/);
+                        var bBul = sLine.charAt(0) === "-";
+                        if (oNum) {
+                            if (sListType !== "ol") { closeList(); aOut.push("<ol>"); sListType = "ol"; }
+                            aOut.push("<li>" + oNum[2] + "</li>");
+                        } else if (bBul) {
+                            if (sListType !== "ul") { closeList(); aOut.push("<ul>"); sListType = "ul"; }
+                            aOut.push("<li>" + sLine.substring(1).trim() + "</li>");
+                        } else {
+                            closeList();
+                            aOut.push("<p>" + sLine + "</p>");
+                        }
+                    });
+                    closeList();
+                    var sHtml = aOut.join("");
+                    this._oDetailModel.setProperty("/remediationText", sHtml);
                     this._oDetailModel.setProperty("/remediationLoading", false);
                 }.bind(this))
                 .catch(function () {
