@@ -9,6 +9,7 @@
             <Bar>
                 <contentLeft><Title text="SoD Rule Matrix" level="H4"/></contentLeft>
                 <contentRight>
+                    <Button text="Export Excel" icon="sap-icon://excel-attachment" press=".onExportExcel"/>
                     <Button text="Export YAML"  icon="sap-icon://download" press=".onExportYAML"/>
                     <Button text="AI Rule Author" icon="sap-icon://ai"     press=".onAuthorWithAI"/>
                     <Button text="New Rule"     icon="sap-icon://add"      press=".onNewRule" type="Emphasized"/>
@@ -20,17 +21,17 @@
 
                 <!-- KPI row -->
                 <HBox wrap="Wrap" class="sapUiSmallMarginBottom">
-                    <GenericTile header="Total Rules"    subheader="18 active · 2 disabled"    frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
-                        <tileContent><TileContent><content><NumericContent value="20" valueColor="Neutral" withMargin="false"/></content></TileContent></tileContent>
+                    <GenericTile header="Total Rules"    subheader="{= ${kpi>/activeRules} + ' active · ' + ${kpi>/disabledRules} + ' disabled'}"    frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content><NumericContent value="{kpi>/totalRules}" valueColor="Neutral" withMargin="false"/></content></TileContent></tileContent>
                     </GenericTile>
-                    <GenericTile header="High Severity"  subheader="Auto-escalate to alert"    frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
-                        <tileContent><TileContent><content><NumericContent value="8" valueColor="Critical" withMargin="false"/></content></TileContent></tileContent>
+                    <GenericTile header="High Severity"  subheader="Active High-risk rules"    frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content><NumericContent value="{kpi>/highSeverity}" valueColor="Critical" withMargin="false"/></content></TileContent></tileContent>
                     </GenericTile>
-                    <GenericTile header="Rules Triggered" subheader="47 total hits this scan"  frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
-                        <tileContent><TileContent><content><NumericContent value="12" valueColor="Neutral" withMargin="false"/></content></TileContent></tileContent>
+                    <GenericTile header="Rules Triggered" subheader="Distinct role pairs matched · latest scan"  frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content><NumericContent value="{kpi>/rulesTriggered}" valueColor="Neutral" withMargin="false"/></content></TileContent></tileContent>
                     </GenericTile>
-                    <GenericTile header="Last Edited"    subheader="Marcus Reinholt · R-007"   frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
-                        <tileContent><TileContent unit="days ago"><content><NumericContent value="2" valueColor="Neutral" withMargin="false"/></content></TileContent></tileContent>
+                    <GenericTile header="Categories"    subheader="Distinct rule categories"   frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content><NumericContent value="{kpi>/categories}" valueColor="Neutral" withMargin="false"/></content></TileContent></tileContent>
                     </GenericTile>
                 </HBox>
 

@@ -71,14 +71,14 @@ sap.ui.define([
                 }
             }.bind(this));
 
-            // Load all scans for trend
+            // Load most recent scans for trend (chronological order for the chart)
             oModel.bindList("/ScanResults", null, null, null, {
-                $orderby: "startedAt asc"
-            }).requestContexts(0, 50).then(function (aCtx) {
+                $orderby: "startedAt desc"
+            }).requestContexts(0, 15).then(function (aCtx) {
                 var aTrend = aCtx.map(function (c) {
                     var o = c.getObject();
                     return { scanCode: o.scanCode, riskScore: o.riskScore, violationsFound: o.violationsFound };
-                });
+                }).reverse(); // oldest to newest, left to right
                 this._oOvState.setProperty("/trendData", aTrend);
                 this._initCharts();
             }.bind(this));
@@ -117,9 +117,17 @@ sap.ui.define([
                 this._initCharts();
             }.bind(this));
 
-            // Load critical roles count
-            oModel.bindList("/CriticalRoleAssignments").requestContexts(0, 100).then(function (aCtx) {
-                this._oOvState.setProperty("/criticalRoles", aCtx.length);
+            // Load critical roles count — scoped to latest scan
+            oModel.bindList("/ScanResults", null, null, null, {
+                $orderby: "startedAt desc"
+            }).requestContexts(0, 1).then(function (aLatest) {
+                if (!aLatest.length) return;
+                var sScanId = aLatest[0].getObject().ID;
+                return oModel.bindList("/CriticalRoleAssignments", null, null, null, {
+                    $filter: "scanId eq " + sScanId
+                }).requestContexts(0, 200);
+            }).then(function (aCtx) {
+                this._oOvState.setProperty("/criticalRoles", aCtx ? aCtx.length : 0);
             }.bind(this));
 
             // Load locked users count
@@ -220,7 +228,29 @@ sap.ui.define([
         onNavToCompliance:   function () { this.navTo("compliance"); },
         onNavTo:             function () { this.navTo("violations"); },
         onViolationPress:    function () { this.navTo("violations"); },
-        onExportOverview:    function () { this.showToast("Exporting overview report..."); },
+        onExportOverview: function () {
+            var oModel  = this.getModel("sentinelgrc");
+            var oAction = oModel.bindContext("/generateReport(...)");
+            this.showToast("Generating full report…");
+            oAction.execute().then(function () {
+                var oResult = oAction.getBoundContext().getObject();
+                var sBinary = atob(oResult.base64);
+                var aBytes  = new Uint8Array(sBinary.length);
+                for (var i = 0; i < sBinary.length; i++) aBytes[i] = sBinary.charCodeAt(i);
+                var oBlob = new Blob([aBytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+                var sUrl  = URL.createObjectURL(oBlob);
+                var oLink = document.createElement("a");
+                oLink.href = sUrl;
+                oLink.download = oResult.fileName;
+                document.body.appendChild(oLink);
+                oLink.click();
+                document.body.removeChild(oLink);
+                URL.revokeObjectURL(sUrl);
+                this.showToast("Report downloaded: " + oResult.fileName);
+            }.bind(this)).catch(function (err) {
+                sap.m.MessageBox.error("Report generation failed: " + (err.message || "unknown error"));
+            });
+        },
 
         onUserPress: function (oEvent) {
             var oCtx    = oEvent.getSource().getBindingContext("sentinelgrc");

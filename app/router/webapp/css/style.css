@@ -15,6 +15,14 @@
     border: 1px solid var(--sapField_BorderColor, #d9dbdd);
     border-radius: 4px;
     padding: 1px 6px;
+    color: var(--sapTextColor, #32363a);
+}
+/* Dark mode chip override — the SAPUI5 field background is too pale in dark */
+html[data-sap-ui-theme="sap_horizon_dark"] .sentinelChip,
+[data-sap-ui-theme="sap_horizon_dark"] .sentinelChip {
+    background: #2d3748 !important;
+    border-color: #4a5568 !important;
+    color: #e2e8f0 !important;
 }
 
 /* ── Page background ── */
@@ -76,9 +84,9 @@
     right: 0;
     bottom: 0;
     width: 420px;
-    background: #ffffff;
+    background: var(--sapGroup_ContentBackground, #ffffff);
     border-left: 1px solid var(--sapContent_ForegroundBorderColor, #d9dbdd);
-    box-shadow: -6px 0 24px rgba(0,0,0,0.10);
+    box-shadow: -6px 0 24px rgba(0,0,0,0.28);
     z-index: 400;
     display: flex;
     flex-direction: column;
@@ -102,7 +110,7 @@
 .sentinelChatHeader {
     padding: 12px 16px !important;
     border-bottom: 1px solid var(--sapContent_ForegroundBorderColor, #d9dbdd) !important;
-    background: #ffffff !important;
+    background: var(--sapGroup_ContentBackground, #ffffff) !important;
     flex-shrink: 0 !important;
     width: 100% !important;
     box-sizing: border-box !important;
@@ -156,16 +164,16 @@
     white-space: nowrap !important;
 }
 .sentinelSuggBtn.sapMBtn:hover .sapMBtnInner {
-    background: #e8f2ff !important;
-    border-color: #0070f2 !important;
-    color: #0070f2 !important;
+    background: var(--sapButton_Hover_Background, #e8f2ff) !important;
+    border-color: var(--sapHighlightColor, #0070f2) !important;
+    color: var(--sapHighlightColor, #0070f2) !important;
 }
 
 /* ── Input row ── */
 .sentinelChatInputRow {
     padding: 10px 12px !important;
     border-top: 1px solid var(--sapContent_ForegroundBorderColor, #d9dbdd) !important;
-    background: #ffffff !important;
+    background: var(--sapGroup_ContentBackground, #ffffff) !important;
     flex-shrink: 0 !important;
     box-sizing: border-box !important;
 }
@@ -195,4 +203,86 @@
     border-radius: 2px 12px 12px 12px !important;
     padding: 10px 14px !important;
     max-width: 320px !important;
+}
+
+
+/* ── Dark mode global overrides — all containers, page bodies, toolbars ── */
+html[data-sap-ui-theme="sap_horizon_dark"] body,
+html[data-sap-ui-theme="sap_horizon_dark"] .sapUiBody,
+html[data-sap-ui-theme="sap_horizon_dark"] .sentinelPage,
+[data-sap-ui-theme="sap_horizon_dark"] body,
+[data-sap-ui-theme="sap_horizon_dark"] .sapUiBody,
+[data-sap-ui-theme="sap_horizon_dark"] .sentinelPage {
+    background: #12151b !important;
+}
+html[data-sap-ui-theme="sap_horizon_dark"] .sapMPage,
+html[data-sap-ui-theme="sap_horizon_dark"] .sapMPageBgStandard,
+[data-sap-ui-theme="sap_horizon_dark"] .sapMPage,
+[data-sap-ui-theme="sap_horizon_dark"] .sapMPageBgStandard {
+    background: #12151b !important;
+}
+html[data-sap-ui-theme="sap_horizon_dark"] .sapMIBar-CTX,
+html[data-sap-ui-theme="sap_horizon_dark"] .sapMTB,
+[data-sap-ui-theme="sap_horizon_dark"] .sapMIBar-CTX,
+[data-sap-ui-theme="sap_horizon_dark"] .sapMTB {
+    background: #12151b !important;
+}
+html[data-sap-ui-theme="sap_horizon_dark"] .sapMPanel,
+html[data-sap-ui-theme="sap_horizon_dark"] .sapMPanelContent,
+[data-sap-ui-theme="sap_horizon_dark"] .sapMPanel,
+[data-sap-ui-theme="sap_horizon_dark"] .sapMPanelContent {
+    background: #1b1f27 !important;
+}
+
+
+/* ── Nuclear dark mode override — matches ALL sapUi containers ── */
+html[data-sap-ui-theme="sap_horizon_dark"],
+html[data-sap-ui-theme="sap_horizon_dark"] body,
+html[data-sap-ui-theme="sap_horizon_dark"] .sapUiBody,
+html[data-sap-ui-theme="sap_horizon_dark"] .sapMShell,
+html[data-sap-ui-theme="sap_horizon_dark"] .sapMShellPage,
+html[data-sap-ui-theme="sap_horizon_dark"] .sapMShellCentralBox,
+html[data-sap-ui-theme="sap_horizon_dark"] .sapMShellCentralArea,
+html[data-sap-ui-theme="sap_horizon_dark"] .sapMPage,
+html[data-sap-ui-theme="sap_horizon_dark"] .sapMPageBgStandard,
+html[data-sap-ui-theme="sap_horizon_dark"] .sapMPageBgList,
+html[data-sap-ui-theme="sap_horizon_dark"] .sapMPageBgSolid,
+html[data-sap-ui-theme="sap_horizon_dark"] section,
+html[data-sap-ui-theme="sap_horizon_dark"] .sapTntToolPage,
+html[data-sap-ui-theme="sap_horizon_dark"] .sapTntToolPageMain,
+html[data-sap-ui-theme="sap_horizon_dark"] .sapTntToolPageMainContent,
+html[data-sap-ui-theme="sap_horizon_dark"] .sapTntToolPageAsideContent,
+html[data-sap-ui-theme="sap_horizon_dark"] .sapMSectionContent {
+    background-color: #12151b !important;
+    background: #12151b !important;
+}
+
+
+/* ── Brute force dark mode: ALL non-transparent backgrounds go dark ── */
+html[data-sap-ui-theme="sap_horizon_dark"] * {
+    scrollbar-color: #4a5568 #12151b;
+}
+html[data-sap-ui-theme="sap_horizon_dark"] body,
+html[data-sap-ui-theme="sap_horizon_dark"] body > * {
+    background-color: #12151b !important;
+}
+html[data-sap-ui-theme="sap_horizon_dark"] [class*="sapMPage"],
+html[data-sap-ui-theme="sap_horizon_dark"] [class*="sapMShell"],
+html[data-sap-ui-theme="sap_horizon_dark"] [class*="sapTntTool"],
+html[data-sap-ui-theme="sap_horizon_dark"] [class*="sapMSection"],
+html[data-sap-ui-theme="sap_horizon_dark"] [class*="sapMScrollCont"] {
+    background: #12151b !important;
+    background-color: #12151b !important;
+}
+
+/* Force cascade: when the body has sentinelForceDark, every descendant that
+   doesn't set its own explicit color inherits the dark base. */
+body.sentinelForceDark,
+body.sentinelForceDark > div,
+body.sentinelForceDark > div > div,
+body.sentinelForceDark section,
+body.sentinelForceDark [id^="__page"],
+body.sentinelForceDark [id*="Page"],
+body.sentinelForceDark [id*="page"] {
+    background-color: #12151b !important;
 }

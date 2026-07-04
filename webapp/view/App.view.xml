@@ -43,6 +43,13 @@
                     press=".onOpenCopilot"
                     class="sapUiSmallMarginEnd"/>
 
+                <!-- Theme toggle -->
+                <Button
+                    id="themeToggleBtn"
+                    icon="sap-icon://color-fill"
+                    type="Transparent"
+                    press=".onToggleTheme"
+                    tooltip="Toggle light / dark mode"/>
                 <!-- Notifications -->
                 <Button icon="sap-icon://bell" type="Transparent" press=".onNotifications" tooltip="Notifications"/>
 

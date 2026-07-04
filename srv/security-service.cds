@@ -25,6 +25,13 @@ service SecurityService @(path: '/security-service') {
     action acknowledgeViolation(violationId: UUID, mitigatingControl: String) returns Boolean;
     action openTicket(violationId: UUID) returns { ticketKey: String; ticketUrl: String; };
     action applyNote(noteId: String) returns Boolean;
+    action generateReport() returns { fileName: String; base64: LargeString; };
+    action generateComplianceReport() returns { fileName: String; base64: LargeString; };
+    action generateViolationsReport(scanId: UUID) returns { fileName: String; base64: LargeString; };
+    action generateUsersReport() returns { fileName: String; base64: LargeString; };
+    action generateCriticalRolesReport() returns { fileName: String; base64: LargeString; };
+    action generateSodRulesReport() returns { fileName: String; base64: LargeString; };
+    action recalculateRiskScores() returns { updated: Integer; };
     action openNoteTicket(noteId: String) returns { ticketKey: String; ticketUrl: String; };
     action resolveViolation(violationId: UUID) returns Boolean;
 

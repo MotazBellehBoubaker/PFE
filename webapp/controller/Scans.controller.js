@@ -30,35 +30,32 @@ sap.ui.define([
         },
 
         onTableUpdateFinished: function () {
-            var oBinding = this.byId("scansTable").getBinding("items");
-            var aContexts = oBinding.getCurrentContexts();
-            var iTotalScans    = aContexts.length;
-            var iTotalDuration = 0;
-            var aChartData     = [];
-
-            aContexts.forEach(function (oCtx) {
-                var oScan = oCtx.getObject();
-                iTotalDuration += (oScan.durationSec || 0);
-                aChartData.push({
-                    scanCode:        oScan.scanCode,
-                    riskScore:       oScan.riskScore,
-                    violationsFound: oScan.violationsFound,
-                    complianceScore: oScan.complianceScore
+            var oModel = this.getModel("sentinelgrc");
+            oModel.bindList("/ScanResults", null, null, null, {
+                $orderby: "startedAt desc"
+            }).requestContexts(0, 500).then(function (aContexts) {
+                var iTotalScans    = aContexts.length;
+                var iTotalDuration = 0;
+                var aChartData     = [];
+                aContexts.forEach(function (oCtx) {
+                    var oScan = oCtx.getObject();
+                    iTotalDuration += (oScan.durationSec || 0);
+                    aChartData.push({
+                        scanCode:        oScan.scanCode,
+                        riskScore:       oScan.riskScore,
+                        violationsFound: oScan.violationsFound,
+                        complianceScore: oScan.complianceScore
+                    });
                 });
-            });
-
-            // Latest scan is first (ordered by startedAt desc)
-            var oLatest = aContexts.length ? aContexts[0].getObject() : {};
-
-            this._oScansState.setProperty("/totalScans",       iTotalScans);
-            this._oScansState.setProperty("/avgDuration",
-                iTotalScans ? Math.round(iTotalDuration / iTotalScans) : 0);
-            this._oScansState.setProperty("/latestRisk",       oLatest.riskScore       || 0);
-            this._oScansState.setProperty("/latestCompliance", oLatest.complianceScore || 0);
-            this._oScansState.setProperty("/latestScanCode",   oLatest.scanCode        || "");
-            this._oScansState.setProperty("/chartData",        aChartData.reverse());
-
-            this._initCharts();
+                var oLatest = aContexts.length ? aContexts[0].getObject() : {};
+                this._oScansState.setProperty("/totalScans",       iTotalScans);
+                this._oScansState.setProperty("/avgDuration",
+                    iTotalScans ? Math.round(iTotalDuration / iTotalScans) : 0);
+                this._oScansState.setProperty("/latestRisk",       oLatest.riskScore       || 0);
+                this._oScansState.setProperty("/latestCompliance", oLatest.complianceScore || 0);
+                this._oScansState.setProperty("/latestScanCode",   oLatest.scanCode        || "");
+                this._oScansState.setProperty("/chartData",        aChartData.reverse());
+            }.bind(this));
         },
 
         _initCharts: function () {

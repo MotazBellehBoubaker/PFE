@@ -28,25 +28,24 @@ sap.ui.define([
         },
 
         onTableUpdateFinished: function (oEvent) {
-            var oBinding = this.byId("usersTable").getBinding("items");
-            var aContexts = oBinding.getCurrentContexts();
-            var iTotalUsers  = aContexts.length;
-            var iLocked      = 0;
-            var iDialog      = 0;
-            var iTotalRisk   = 0;
-
-            aContexts.forEach(function (oCtx) {
-                var oUser = oCtx.getObject();
-                if (oUser.locked)            iLocked++;
-                if (oUser.userType === "A")  iDialog++;
-                iTotalRisk += (oUser.riskScore || 0);
-            });
-
-            this._oUsersState.setProperty("/totalUsers",   iTotalUsers);
-            this._oUsersState.setProperty("/lockedUsers",  iLocked);
-            this._oUsersState.setProperty("/dialogUsers",  iDialog);
-            this._oUsersState.setProperty("/avgRiskScore",
-                iTotalUsers ? Math.round(iTotalRisk / iTotalUsers) : 0);
+            var oModel = this.getModel("sentinelgrc");
+            oModel.bindList("/SapUsers", null, null, null, {}).requestContexts(0, 5000).then(function (aContexts) {
+                var iTotalUsers = aContexts.length;
+                var iLocked     = 0;
+                var iDialog     = 0;
+                var iTotalRisk  = 0;
+                aContexts.forEach(function (oCtx) {
+                    var oUser = oCtx.getObject();
+                    if (oUser.locked)           iLocked++;
+                    if (oUser.userType === "A") iDialog++;
+                    iTotalRisk += (oUser.riskScore || 0);
+                });
+                this._oUsersState.setProperty("/totalUsers",  iTotalUsers);
+                this._oUsersState.setProperty("/lockedUsers", iLocked);
+                this._oUsersState.setProperty("/dialogUsers", iDialog);
+                this._oUsersState.setProperty("/avgRiskScore",
+                    iTotalUsers ? Math.round(iTotalRisk / iTotalUsers) : 0);
+            }.bind(this));
         },
 
         onSearch: function (oEvent) {
@@ -81,7 +80,27 @@ sap.ui.define([
         },
 
         onExport: function () {
-            this.showToast("Exporting users CSV...");
+            var oModel  = this.getModel("sentinelgrc");
+            var oAction = oModel.bindContext("/generateUsersReport(...)");
+            this.showToast("Generating users report…");
+            oAction.execute().then(function () {
+                var oResult = oAction.getBoundContext().getObject();
+                var sBinary = atob(oResult.base64);
+                var aBytes  = new Uint8Array(sBinary.length);
+                for (var i = 0; i < sBinary.length; i++) aBytes[i] = sBinary.charCodeAt(i);
+                var oBlob = new Blob([aBytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+                var sUrl  = URL.createObjectURL(oBlob);
+                var oLink = document.createElement("a");
+                oLink.href = sUrl;
+                oLink.download = oResult.fileName;
+                document.body.appendChild(oLink);
+                oLink.click();
+                document.body.removeChild(oLink);
+                URL.revokeObjectURL(sUrl);
+                this.showToast("Report downloaded: " + oResult.fileName);
+            }.bind(this)).catch(function (err) {
+                sap.m.MessageBox.error("Report generation failed: " + (err.message || "unknown error"));
+            });
         }
     });
 });

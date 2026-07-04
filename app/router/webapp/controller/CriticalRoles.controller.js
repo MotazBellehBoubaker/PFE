@@ -59,7 +59,27 @@ sap.ui.define([
         },
 
         onExport: function () {
-            this.showToast("Exporting critical roles CSV...");
+            var oModel  = this.getModel("sentinelgrc");
+            var oAction = oModel.bindContext("/generateCriticalRolesReport(...)");
+            this.showToast("Generating critical roles report…");
+            oAction.execute().then(function () {
+                var oResult = oAction.getBoundContext().getObject();
+                var sBinary = atob(oResult.base64);
+                var aBytes  = new Uint8Array(sBinary.length);
+                for (var i = 0; i < sBinary.length; i++) aBytes[i] = sBinary.charCodeAt(i);
+                var oBlob = new Blob([aBytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+                var sUrl  = URL.createObjectURL(oBlob);
+                var oLink = document.createElement("a");
+                oLink.href = sUrl;
+                oLink.download = oResult.fileName;
+                document.body.appendChild(oLink);
+                oLink.click();
+                document.body.removeChild(oLink);
+                URL.revokeObjectURL(sUrl);
+                this.showToast("Report downloaded: " + oResult.fileName);
+            }.bind(this)).catch(function (err) {
+                sap.m.MessageBox.error("Report generation failed: " + (err.message || "unknown error"));
+            });
         },
 
         onSubscribeAlerts: function () {

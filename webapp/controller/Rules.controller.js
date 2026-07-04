@@ -20,9 +20,45 @@ sap.ui.define([
                 aiDescription: ""
             });
             this.getView().setModel(this._oEditorModel, "editor");
+            this._oKpiModel = new JSONModel({
+                totalRules: 0, activeRules: 0, disabledRules: 0,
+                highSeverity: 0, rulesTriggered: 0, categories: 0
+            });
+            this.getView().setModel(this._oKpiModel, "kpi");
         },
 
+        _loadKpis: function () {
+            var oModel = this.getModel("sentinelgrc");
+            var that = this;
+            oModel.bindList("/SodRules", null, null, null, {}).requestContexts(0, 500).then(function (aCtx) {
+                var aRules = aCtx.map(function (c) { return c.getObject(); });
+                var iActive = aRules.filter(function (r) { return r.active; }).length;
+                var iHigh   = aRules.filter(function (r) { return r.active && r.riskLevel === "High"; }).length;
+                var aCats   = new Set(aRules.map(function (r) { return r.category; }).filter(Boolean));
+                that._oKpiModel.setProperty("/totalRules", aRules.length);
+                that._oKpiModel.setProperty("/activeRules", iActive);
+                that._oKpiModel.setProperty("/disabledRules", aRules.length - iActive);
+                that._oKpiModel.setProperty("/highSeverity", iHigh);
+                that._oKpiModel.setProperty("/categories", aCats.size);
+                return oModel.bindList("/ScanResults", null, null, null, { $orderby: "startedAt desc" }).requestContexts(0, 1);
+            }).then(function (aScan) {
+                if (!aScan || !aScan.length) return;
+                var sScanId = aScan[0].getObject().ID;
+                return oModel.bindList("/Violations", null, null, null, {
+                    $filter: "scanId eq " + sScanId,
+                    $select: "roleA,roleB"
+                }).requestContexts(0, 1000);
+            }).then(function (aViol) {
+                if (!aViol) return;
+                var aPairs = new Set(aViol.map(function (c) {
+                    var o = c.getObject();
+                    return o.roleA + "|" + o.roleB;
+                }));
+                that._oKpiModel.setProperty("/rulesTriggered", aPairs.size);
+            });
+        },
         _onRouteMatched: function () {
+            this._loadKpis();
             // Refresh rules table
             var oTable = this.byId("rulesTable");
             if (oTable && oTable.getBinding("items")) {
@@ -221,6 +257,29 @@ sap.ui.define([
             }.bind(this));
         },
 
+        onExportExcel: function () {
+            var oModel  = this.getModel("sentinelgrc");
+            var oAction = oModel.bindContext("/generateSodRulesReport(...)");
+            MessageToast.show("Generating SoD rules report…");
+            oAction.execute().then(function () {
+                var oResult = oAction.getBoundContext().getObject();
+                var sBinary = atob(oResult.base64);
+                var aBytes  = new Uint8Array(sBinary.length);
+                for (var i = 0; i < sBinary.length; i++) aBytes[i] = sBinary.charCodeAt(i);
+                var oBlob = new Blob([aBytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+                var sUrl  = URL.createObjectURL(oBlob);
+                var oLink = document.createElement("a");
+                oLink.href = sUrl;
+                oLink.download = oResult.fileName;
+                document.body.appendChild(oLink);
+                oLink.click();
+                document.body.removeChild(oLink);
+                URL.revokeObjectURL(sUrl);
+                MessageToast.show("Report downloaded: " + oResult.fileName);
+            }).catch(function (err) {
+                sap.m.MessageBox.error("Report generation failed: " + (err.message || "unknown error"));
+            });
+        },
         onExportYAML: function () {
             var oTable   = this.byId("rulesTable");
             var aCtxs    = oTable.getBinding("items").getCurrentContexts();

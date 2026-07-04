@@ -281,7 +281,29 @@ sap.ui.define([
         },
 
         onExportCSV: function () {
-            this.showToast("Exporting violations CSV...");
+            var oModel   = this.getModel("sentinelgrc");
+            var sScanId  = this._oDetailModel.getProperty("/selectedScanId");
+            var oAction  = oModel.bindContext("/generateViolationsReport(...)");
+            oAction.setParameter("scanId", sScanId || null);
+            this.showToast("Generating violations report…");
+            oAction.execute().then(function () {
+                var oResult = oAction.getBoundContext().getObject();
+                var sBinary = atob(oResult.base64);
+                var aBytes  = new Uint8Array(sBinary.length);
+                for (var i = 0; i < sBinary.length; i++) aBytes[i] = sBinary.charCodeAt(i);
+                var oBlob = new Blob([aBytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+                var sUrl  = URL.createObjectURL(oBlob);
+                var oLink = document.createElement("a");
+                oLink.href = sUrl;
+                oLink.download = oResult.fileName;
+                document.body.appendChild(oLink);
+                oLink.click();
+                document.body.removeChild(oLink);
+                URL.revokeObjectURL(sUrl);
+                MessageToast.show("Report downloaded: " + oResult.fileName);
+            }).catch(function (err) {
+                sap.m.MessageBox.error("Report generation failed: " + (err.message || "unknown error"));
+            });
         },
 
         onNavigateToUser: function (oEvent) {

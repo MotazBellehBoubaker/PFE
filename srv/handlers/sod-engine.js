@@ -162,15 +162,14 @@ function calculateUserRiskScores(aViolations, aCriticalRoles) {
  */
 function calculateSystemRiskScore(aViolations, aCriticalRoles, iTotalUsers) {
     if (!iTotalUsers) return 0;
-
-    const weights = { High: 3, Medium: 2, Low: 1 };
+    const weights = { High: 8, Medium: 4, Low: 1 };
     let iRaw = 0;
-
     aViolations.forEach(v => { iRaw += weights[v.severity] || 1; });
-    aCriticalRoles.forEach(() => { iRaw += 5; });
-
-    // Normalise: if 1% of users have high violations, that is already score 50
-    const iNorm = Math.round((iRaw / (iTotalUsers * 0.5)) * 50);
+    aCriticalRoles.forEach(() => { iRaw += 6; });
+    // Normalise against worst-case exposure: every user with 2 high
+    // violations plus one critical role assignment
+    const iMaxPossible = iTotalUsers * (2 * weights.High + 6);
+    const iNorm = Math.round((iRaw / iMaxPossible) * 100);
     return Math.min(100, Math.max(0, iNorm));
 }
 

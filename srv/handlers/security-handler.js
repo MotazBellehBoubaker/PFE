@@ -19,6 +19,7 @@ const {
     identifyMissingNotes
 } = require('./compliance-engine');
 const { SECURITY_NOTES } = require('./security-notes-catalog');
+const { buildReport, buildComplianceReport, buildViolationsReport, buildUsersReport, buildCriticalRolesReport, buildSodRulesReport } = require('./report-generator');
 
 module.exports = class SecurityHandler extends cds.ApplicationService {
 
@@ -475,6 +476,87 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
             const oResp = JSON.parse(sResp);
             console.log('[Jira] Created note ticket', oResp.key);
             return { ticketKey: oResp.key, ticketUrl: sJiraUrl + '/browse/' + oResp.key };
+        });
+
+        // ── generateReport (full Excel workbook) ──────────────────────────
+        this.on('generateReport', async (req) => {
+            try {
+                const { buffer, filename } = await buildReport(db);
+                return { fileName: filename, base64: buffer.toString('base64') };
+            } catch (e) {
+                return req.error(500, 'Report generation failed: ' + e.message);
+            }
+        });
+
+        // ── generateComplianceReport (Compliance page only) ───────────────
+        this.on('generateComplianceReport', async (req) => {
+            try {
+                const { buffer, filename } = await buildComplianceReport(db);
+                return { fileName: filename, base64: buffer.toString('base64') };
+            } catch (e) {
+                return req.error(500, 'Report generation failed: ' + e.message);
+            }
+        });
+
+        // ── generateViolationsReport (Violations page only) ────────────────
+        this.on('generateViolationsReport', async (req) => {
+            try {
+                const { scanId } = req.data;
+                const { buffer, filename } = await buildViolationsReport(db, scanId);
+                return { fileName: filename, base64: buffer.toString('base64') };
+            } catch (e) {
+                return req.error(500, 'Report generation failed: ' + e.message);
+            }
+        });
+
+        // ── generateUsersReport (Users & Risk page only) ────────────────────
+        this.on('generateUsersReport', async (req) => {
+            try {
+                const { buffer, filename } = await buildUsersReport(db);
+                return { fileName: filename, base64: buffer.toString('base64') };
+            } catch (e) {
+                return req.error(500, 'Report generation failed: ' + e.message);
+            }
+        });
+
+        // ── generateCriticalRolesReport (Critical Roles page only) ─────────
+        this.on('generateCriticalRolesReport', async (req) => {
+            try {
+                const { buffer, filename } = await buildCriticalRolesReport(db);
+                return { fileName: filename, base64: buffer.toString('base64') };
+            } catch (e) {
+                return req.error(500, 'Report generation failed: ' + e.message);
+            }
+        });
+
+        // ── generateSodRulesReport (SoD Rules page only) ────────────────────
+        this.on('generateSodRulesReport', async (req) => {
+            try {
+                const { buffer, filename } = await buildSodRulesReport(db);
+                return { fileName: filename, base64: buffer.toString('base64') };
+            } catch (e) {
+                return req.error(500, 'Report generation failed: ' + e.message);
+            }
+        });
+
+        // ── recalculateRiskScores (backfill after formula change) ──────────
+        this.on('recalculateRiskScores', async (req) => {
+            const aScans = await db.run(SELECT.from('sentinel.db.ScanResult').where({ status: 'Complete' }));
+            let iUpdated = 0;
+            for (const oScan of aScans) {
+                const aViol = await db.run(SELECT.from('sentinel.db.Violation').where({ scanId: oScan.ID }));
+                const aCrit = await db.run(SELECT.from('sentinel.db.CriticalRoleAssignment').where({ scanId: oScan.ID }));
+                const iUsers = oScan.usersScanned || 1;
+                const iNewScore = calculateSystemRiskScore(aViol, aCrit, iUsers);
+                await db.run(
+                    UPDATE('sentinel.db.ScanResult')
+                        .set({ riskScore: iNewScore, modifiedAt: new Date().toISOString() })
+                        .where({ ID: oScan.ID })
+                );
+                iUpdated++;
+            }
+            console.log('[SecurityHandler] Recalculated risk scores for ' + iUpdated + ' scans');
+            return { updated: iUpdated };
         });
 
         // ── acknowledgeViolation ─────────────────────────────────────────
