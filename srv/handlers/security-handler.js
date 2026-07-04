@@ -18,11 +18,34 @@ const {
     evaluateCompliance,
     identifyMissingNotes
 } = require('./compliance-engine');
+const { SECURITY_NOTES } = require('./security-notes-catalog');
 
 module.exports = class SecurityHandler extends cds.ApplicationService {
 
     async init() {
         const db = await cds.connect.to('db');
+
+        // ── Seed SAP Security Notes catalog (independent of scans) ──────
+        try {
+            const sNow = new Date().toISOString();
+            for (const oNote of SECURITY_NOTES) {
+                await db.run(UPSERT.into('sentinel.db.SecurityNote').entries({
+                    noteId:      oNote.noteId,
+                    component:   oNote.component,
+                    priority:    oNote.priority,
+                    category:    oNote.category,
+                    description: oNote.description,
+                    releaseDate: oNote.releaseDate,
+                    noteUrl:     oNote.noteUrl,
+                    applied:     false,
+                    createdAt:   sNow,
+                    modifiedAt:  sNow
+                }));
+            }
+            console.log('[SecurityNotes] Seeded ' + SECURITY_NOTES.length + ' notes from catalog');
+        } catch (e) {
+            console.log('[SecurityNotes] Seeding skipped:', e.message);
+        }
 
         // ── triggerScan ──────────────────────────────────────────────────
         this.on('triggerScan', async (req) => {
@@ -123,15 +146,7 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
                     }
                 }
 
-                // 13 — Persist missing security notes
-                if (aMissingNotes.length) {
-                    for (const oNote of aMissingNotes) {
-                        await db.run(UPSERT.into('sentinel.db.SecurityNote').entries({
-                            ...oNote, applied: false,
-                            createdAt: sNow, modifiedAt: sNow
-                        }));
-                    }
-                }
+                // 13 — Security notes are seeded at startup (see init)
 
                 // 14 — Update user risk scores
                 for (const [sUserId, iScore] of Object.entries(oUserScores)) {
@@ -217,10 +232,19 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
             if (!sJiraUrl || !sToken) return req.error(500, 'Jira not configured');
 
             const sAuth = Buffer.from(sEmail + ':' + sToken).toString('base64');
+            // Severity → Jira priority + SLA due date
+            const oPrioMap = { High: 'High', Medium: 'Medium', Low: 'Low' };
+            const oSlaDays = { High: 2, Medium: 7, Low: 30 };
+            const dDue = new Date();
+            dDue.setDate(dDue.getDate() + (oSlaDays[oViol.severity] || 14));
+            const sDueDate = dDue.toISOString().substring(0, 10);
             const oBody = {
                 fields: {
                     project:   { key: sProject },
                     issuetype: { name: 'Task' },
+                    priority:  { name: oPrioMap[oViol.severity] || 'Medium' },
+                    duedate:   sDueDate,
+                    labels:    ['sentinelgrc', 'sod-violation', (oViol.severity || 'unknown').toLowerCase()],
                     summary:   '[SentinelGRC] ' + oViol.severity + ' SoD Violation: ' +
                                oViol.userId + ' — ' + oViol.roleA + ' + ' + oViol.roleB,
                     description: {
@@ -283,6 +307,174 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
                 ticketKey: oResp.key,
                 ticketUrl: sJiraUrl + '/browse/' + oResp.key
             };
+        });
+
+        // ── applyNote (mark security note as applied) ────────────────────
+        this.on('applyNote', async (req) => {
+            const { noteId } = req.data;
+            await db.run(
+                UPDATE('sentinel.db.SecurityNote')
+                    .set({ applied: true, modifiedAt: new Date().toISOString() })
+                    .where({ noteId: noteId })
+            );
+            return true;
+        });
+
+        // ── openNoteTicket (Jira ticket for a security note) ─────────────
+        this.on('openNoteTicket', async (req) => {
+            const { noteId } = req.data;
+            const oNote = await db.run(
+                SELECT.one.from('sentinel.db.SecurityNote').where({ noteId: noteId })
+            );
+            if (!oNote) return req.error(404, 'Note not found');
+
+            const sJiraUrl = (process.env.JIRA_URL || '').replace(/\/$/, '');
+            const sEmail   = process.env.JIRA_EMAIL || '';
+            const sToken   = process.env.JIRA_TOKEN || '';
+            const sProject = process.env.JIRA_PROJECT || 'KAN';
+            if (!sJiraUrl || !sToken) return req.error(500, 'Jira not configured');
+
+            const sAuth = Buffer.from(sEmail + ':' + sToken).toString('base64');
+            const oSla = { High: 2, Medium: 14, Low: 30 };
+            const dDue = new Date();
+            dDue.setDate(dDue.getDate() + (oSla[oNote.priority] || 14));
+
+            const oBody = {
+                fields: {
+                    project:   { key: sProject },
+                    issuetype: { name: 'Task' },
+                    priority:  { name: oNote.priority || 'Medium' },
+                    duedate:   dDue.toISOString().substring(0, 10),
+                    labels:    ['sentinelgrc', 'security-note', (oNote.category || '').toLowerCase().replace(/\s+/g,'-')],
+                    summary:   '[SentinelGRC] Apply SAP Note ' + oNote.noteId + ' — ' + (oNote.component || ''),
+                    description: {
+                        type: 'doc', version: 1,
+                        content: [
+                            { type: 'paragraph', content: [{ type: 'text',
+                                text: 'Missing SAP Security Note detected by SentinelGRC.' }] },
+                            { type: 'paragraph', content: [{ type: 'text',
+                                text: 'Note: ' + oNote.noteId + ' (' + (oNote.category || '') + ', priority ' + oNote.priority + ')' }] },
+                            { type: 'paragraph', content: [{ type: 'text',
+                                text: 'Component: ' + (oNote.component || '') }] },
+                            { type: 'paragraph', content: [{ type: 'text',
+                                text: (oNote.description || '') }] },
+                            { type: 'paragraph', content: [{ type: 'text',
+                                text: 'Reference: https://me.sap.com/notes/' + oNote.noteId }] }
+                        ]
+                    }
+                }
+            };
+
+            const https3 = require('https');
+            const oUrl = new URL(sJiraUrl + '/rest/api/3/issue');
+            const sResp = await new Promise((resolve, reject) => {
+                const r = https3.request({
+                    hostname: oUrl.hostname, path: oUrl.pathname, method: 'POST',
+                    headers: {
+                        'Authorization': 'Basic ' + sAuth,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                }, res => {
+                    let d = '';
+                    res.on('data', c => d += c);
+                    res.on('end', () => {
+                        if (res.statusCode >= 200 && res.statusCode < 300) resolve(d);
+                        else reject(new Error('Jira ' + res.statusCode + ': ' + d.slice(0, 300)));
+                    });
+                });
+                r.on('error', reject);
+                r.setTimeout(30000, () => r.destroy(new Error('Jira timeout')));
+                r.write(JSON.stringify(oBody));
+                r.end();
+            });
+            const oResp = JSON.parse(sResp);
+            console.log('[Jira] Created note ticket', oResp.key);
+            return { ticketKey: oResp.key, ticketUrl: sJiraUrl + '/browse/' + oResp.key };
+        });
+
+        // ── applyNote (mark security note as applied) ────────────────────
+        this.on('applyNote', async (req) => {
+            const { noteId } = req.data;
+            await db.run(
+                UPDATE('sentinel.db.SecurityNote')
+                    .set({ applied: true, modifiedAt: new Date().toISOString() })
+                    .where({ noteId: noteId })
+            );
+            return true;
+        });
+
+        // ── openNoteTicket (Jira ticket for a security note) ─────────────
+        this.on('openNoteTicket', async (req) => {
+            const { noteId } = req.data;
+            const oNote = await db.run(
+                SELECT.one.from('sentinel.db.SecurityNote').where({ noteId: noteId })
+            );
+            if (!oNote) return req.error(404, 'Note not found');
+
+            const sJiraUrl = (process.env.JIRA_URL || '').replace(/\/$/, '');
+            const sEmail   = process.env.JIRA_EMAIL || '';
+            const sToken   = process.env.JIRA_TOKEN || '';
+            const sProject = process.env.JIRA_PROJECT || 'KAN';
+            if (!sJiraUrl || !sToken) return req.error(500, 'Jira not configured');
+
+            const sAuth = Buffer.from(sEmail + ':' + sToken).toString('base64');
+            const oSla = { High: 2, Medium: 14, Low: 30 };
+            const dDue = new Date();
+            dDue.setDate(dDue.getDate() + (oSla[oNote.priority] || 14));
+
+            const oBody = {
+                fields: {
+                    project:   { key: sProject },
+                    issuetype: { name: 'Task' },
+                    priority:  { name: oNote.priority || 'Medium' },
+                    duedate:   dDue.toISOString().substring(0, 10),
+                    labels:    ['sentinelgrc', 'security-note', (oNote.category || '').toLowerCase().replace(/\s+/g,'-')],
+                    summary:   '[SentinelGRC] Apply SAP Note ' + oNote.noteId + ' — ' + (oNote.component || ''),
+                    description: {
+                        type: 'doc', version: 1,
+                        content: [
+                            { type: 'paragraph', content: [{ type: 'text',
+                                text: 'Missing SAP Security Note detected by SentinelGRC.' }] },
+                            { type: 'paragraph', content: [{ type: 'text',
+                                text: 'Note: ' + oNote.noteId + ' (' + (oNote.category || '') + ', priority ' + oNote.priority + ')' }] },
+                            { type: 'paragraph', content: [{ type: 'text',
+                                text: 'Component: ' + (oNote.component || '') }] },
+                            { type: 'paragraph', content: [{ type: 'text',
+                                text: (oNote.description || '') }] },
+                            { type: 'paragraph', content: [{ type: 'text',
+                                text: 'Reference: https://me.sap.com/notes/' + oNote.noteId }] }
+                        ]
+                    }
+                }
+            };
+
+            const https3 = require('https');
+            const oUrl = new URL(sJiraUrl + '/rest/api/3/issue');
+            const sResp = await new Promise((resolve, reject) => {
+                const r = https3.request({
+                    hostname: oUrl.hostname, path: oUrl.pathname, method: 'POST',
+                    headers: {
+                        'Authorization': 'Basic ' + sAuth,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                }, res => {
+                    let d = '';
+                    res.on('data', c => d += c);
+                    res.on('end', () => {
+                        if (res.statusCode >= 200 && res.statusCode < 300) resolve(d);
+                        else reject(new Error('Jira ' + res.statusCode + ': ' + d.slice(0, 300)));
+                    });
+                });
+                r.on('error', reject);
+                r.setTimeout(30000, () => r.destroy(new Error('Jira timeout')));
+                r.write(JSON.stringify(oBody));
+                r.end();
+            });
+            const oResp = JSON.parse(sResp);
+            console.log('[Jira] Created note ticket', oResp.key);
+            return { ticketKey: oResp.key, ticketUrl: sJiraUrl + '/browse/' + oResp.key };
         });
 
         // ── acknowledgeViolation ─────────────────────────────────────────

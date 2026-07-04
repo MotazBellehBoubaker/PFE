@@ -1,4 +1,5 @@
 'use strict';
+const { SECURITY_NOTES } = require('./security-notes-catalog');
 
 // ─────────────────────────────────────────────────────────────────
 //  Compliance Engine — Component baseline + security notes analysis
@@ -101,27 +102,18 @@ function evaluateCompliance(aInstalledVersions) {
  */
 function identifyMissingNotes(aComponents, aAppliedNotes = []) {
     const aAppliedIds = new Set(aAppliedNotes.map(n => n.noteId));
-
-    // Hardcoded critical notes — in production fetch from SAP Support API
-    const aKnownNotes = [
-        { noteId: '3421337', component: 'SAP_BASIS', priority: 'High',   category: 'Code Injection',       description: 'ABAP kernel vulnerability via RFC',                     releaseDate: '2024-11-12' },
-        { noteId: '3392483', component: 'SAP_BASIS', priority: 'High',   category: 'Privilege Escalation', description: 'Missing auth check in SM59_ACT_EXECUTE',                 releaseDate: '2024-10-08' },
-        { noteId: '3385711', component: 'SAP_BASIS', priority: 'High',   category: 'XSS',                  description: 'Cross-site scripting in Web Dynpro ABAP',                releaseDate: '2024-09-10' },
-        { noteId: '3370490', component: 'SAP_BASIS', priority: 'Medium', category: 'Info Disclosure',       description: 'System information exposure via test program',            releaseDate: '2024-08-13' },
-        { noteId: '3341934', component: 'SAP_BASIS', priority: 'Medium', category: 'Missing Auth Check',    description: 'Auth bypass in SE38 under specific conditions',           releaseDate: '2024-07-09' },
-        { noteId: '3412926', component: 'SAP_AP',    priority: 'High',   category: 'Privilege Escalation', description: 'Unauthorized FI posting via batch input',                 releaseDate: '2024-12-10' },
-        { noteId: '3398201', component: 'SAP_AP',    priority: 'Medium', category: 'Missing Auth Check',    description: 'Missing auth check in AP payment run',                   releaseDate: '2024-11-05' },
-        { noteId: '3356789', component: 'SAP_AP',    priority: 'Medium', category: 'Data Validation',      description: 'Input validation in vendor master change',               releaseDate: '2024-06-11' },
-        { noteId: 'CVE-2024-0112', component: 'WEBCUIF', priority: 'High', category: 'CVE',              description: 'Prototype pollution in SAP UI5 runtime 740 and below',     releaseDate: '2024-01-09' }
-    ];
-
-    const aOutdatedComponents = new Set(
-        aComponents.filter(c => c.status === 'Outdated').map(c => c.name)
-    );
-
-    return aKnownNotes.filter(note =>
-        aOutdatedComponents.has(note.component) && !aAppliedIds.has(note.noteId)
-    );
+    // Show the full catalog, minus notes already marked as applied
+    return SECURITY_NOTES
+        .filter(n => !aAppliedIds.has(n.noteId))
+        .map(n => ({
+            noteId:      n.noteId,
+            component:   n.component,
+            priority:    n.priority,
+            category:    n.category,
+            description: n.description,
+            releaseDate: n.releaseDate,
+            noteUrl:     n.noteUrl
+        }));
 }
 
 module.exports = { evaluateCompliance, identifyMissingNotes, COMPONENT_BASELINE };

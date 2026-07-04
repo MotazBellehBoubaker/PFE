@@ -145,55 +145,119 @@
                 </layout:Grid>
 
                 <!-- SAP Security Notes -->
-                <Panel expandable="true" expanded="true" class="sapUiSmallMarginBottom">
-                    <headerToolbar>
-                        <Toolbar>
-                            <Title text="Missing SAP Security Notes" level="H5"/>
-                            <ObjectStatus text="{compState>/missingNotes} missing" state="Warning" class="sapUiSmallMarginBegin"/>
-                            <ToolbarSpacer/>
-                            <Button text="Open SAP Launchpad" icon="sap-icon://action" type="Transparent" press=".onOpenSAPNotes"/>
-                        </Toolbar>
-                    </headerToolbar>
-                    <content>
-                        <Table
-                            id="notesTable"
-                            items="{
-                                path: 'sentinelgrc>/SecurityNotes',
-                                parameters: { $orderby: 'priority asc' }
-                            }"
-                            mode="None"
-                            sticky="ColumnHeaders"
-                            updateFinished=".onNotesUpdateFinished">
-                            <columns>
-                                <Column width="8rem"><Text text="Note #"/></Column>
-                                <Column width="9rem"><Text text="Component"/></Column>
-                                <Column width="7rem"><Text text="Priority"/></Column>
-                                <Column width="7rem"><Text text="Category"/></Column>
-                                <Column><Text text="Description"/></Column>
-                                <Column width="8rem"><Text text="Release Date"/></Column>
-                                <Column width="7rem"><Text text="Status"/></Column>
-                            </columns>
-                            <items>
-                                <ColumnListItem
-                                    highlight="{path: 'sentinelgrc>priority', formatter: '.formatter.rowHighlight'}"
-                                    type="Active"
-                                    press=".onNotePress">
-                                    <cells>
-                                        <Link text="{sentinelgrc>noteId}" press=".onNotePress" class="sentinelMono"/>
-                                        <Text text="{sentinelgrc>component}" class="sentinelMono"/>
-                                        <ObjectStatus
-                                            text="{sentinelgrc>priority}"
-                                            state="{path: 'sentinelgrc>priority', formatter: '.formatter.severityState'}"/>
-                                        <Text text="{sentinelgrc>category}"/>
-                                        <Text text="{sentinelgrc>description}" wrapping="false"/>
-                                        <Text text="{path: 'sentinelgrc>releaseDate', formatter: '.formatter.formatDate'}" class="sentinelMono"/>
-                                        <ObjectStatus text="Missing" state="Error" icon="sap-icon://alert"/>
-                                    </cells>
-                                </ColumnListItem>
-                            </items>
-                        </Table>
-                    </content>
-                </Panel>
+                <HBox width="100%" alignItems="Stretch" renderType="Bare" class="sapUiSmallMarginBottom">
+                    <Panel expandable="true" expanded="true">
+                        <layoutData>
+                            <FlexItemData growFactor="3" baseSize="0" shrinkFactor="1"/>
+                        </layoutData>
+                        <headerToolbar>
+                            <Toolbar>
+                                <Title text="Missing SAP Security Notes" level="H5"/>
+                                <ObjectStatus text="{compState>/missingNotes} missing" state="Warning" class="sapUiSmallMarginBegin"/>
+                                <ToolbarSpacer/>
+                                <Button text="Open SAP Launchpad" icon="sap-icon://action" type="Transparent" press=".onOpenSAPNotes"/>
+                            </Toolbar>
+                        </headerToolbar>
+                        <content>
+                            <Table
+                                id="notesTable"
+                                items="{
+                                    path: 'sentinelgrc>/SecurityNotes',
+                                    parameters: {
+                                        $orderby: 'priority asc,releaseDate desc',
+                                        $filter: 'applied eq false'
+                                    }
+                                }"
+                                mode="None"
+                                growing="true"
+                                growingThreshold="10"
+                                growingScrollToLoad="false"
+                                sticky="ColumnHeaders"
+                                updateFinished=".onNotesUpdateFinished">
+                                <columns>
+                                    <Column width="8rem"><Text text="Note #"/></Column>
+                                    <Column width="9rem"><Text text="Component"/></Column>
+                                    <Column width="7rem"><Text text="Priority"/></Column>
+                                    <Column width="7rem"><Text text="Category"/></Column>
+                                    <Column><Text text="Description"/></Column>
+                                    <Column width="8rem"><Text text="Release Date"/></Column>
+                                    <Column width="7rem"><Text text="Status"/></Column>
+                                </columns>
+                                <items>
+                                    <ColumnListItem
+                                        highlight="{path: 'sentinelgrc>priority', formatter: '.formatter.rowHighlight'}"
+                                        type="Active"
+                                        press=".onNotePress">
+                                        <cells>
+                                            <Link text="{sentinelgrc>noteId}" href="{sentinelgrc>noteUrl}" target="_blank" class="sentinelMono"/>
+                                            <Text text="{sentinelgrc>component}" class="sentinelMono"/>
+                                            <ObjectStatus
+                                                text="{sentinelgrc>priority}"
+                                                state="{path: 'sentinelgrc>priority', formatter: '.formatter.severityState'}"/>
+                                            <Text text="{sentinelgrc>category}"/>
+                                            <Text text="{sentinelgrc>description}" wrapping="false"/>
+                                            <Text text="{path: 'sentinelgrc>releaseDate', formatter: '.formatter.formatDate'}" class="sentinelMono"/>
+                                            <ObjectStatus text="Missing" state="Error" icon="sap-icon://alert"/>
+                                        </cells>
+                                    </ColumnListItem>
+                                </items>
+                            </Table>
+                        </content>
+                    </Panel>
+
+                    <Panel
+                        id="noteDetailPanel"
+                        visible="{= !!${compState>/selectedNote} }"
+                        class="sapUiSmallMarginBegin">
+                        <layoutData>
+                            <FlexItemData growFactor="2" baseSize="0" shrinkFactor="1"/>
+                        </layoutData>
+                        <headerToolbar>
+                            <Toolbar>
+                                <Title text="Note {compState>/selectedNote/noteId}" level="H5" class="sentinelMono"/>
+                                <ToolbarSpacer/>
+                                <ObjectStatus
+                                    text="{compState>/selectedNote/priority}"
+                                    state="{path: 'compState>/selectedNote/priority', formatter: '.formatter.severityState'}"/>
+                                <Button icon="sap-icon://decline" type="Transparent" tooltip="Close" press=".onCloseNoteDetail"/>
+                            </Toolbar>
+                        </headerToolbar>
+                        <content>
+                            <VBox class="sapUiSmallMargin">
+                                <Text text="{compState>/selectedNote/description}" wrapping="true" class="sapUiSmallMarginBottom"/>
+                                <HBox class="sapUiTinyMarginBottom">
+                                    <Label text="Component:" width="110px"/>
+                                    <Text text="{compState>/selectedNote/component}" class="sentinelMono"/>
+                                </HBox>
+                                <HBox class="sapUiTinyMarginBottom">
+                                    <Label text="Category:" width="110px"/>
+                                    <ObjectStatus
+                                        text="{compState>/selectedNote/category}"
+                                        state="{= ${compState>/selectedNote/category} === 'HotNews' ? 'Error' : 'None' }"/>
+                                </HBox>
+                                <HBox class="sapUiTinyMarginBottom">
+                                    <Label text="Released:" width="110px"/>
+                                    <Text text="{compState>/selectedNote/releaseDate}" class="sentinelMono"/>
+                                </HBox>
+                                <HBox class="sapUiSmallMarginBottom">
+                                    <Label text="Reference:" width="110px"/>
+                                    <Link text="me.sap.com/notes/{compState>/selectedNote/noteId}" press=".onOpenNoteInSAP"/>
+                                </HBox>
+                                <HBox class="sapUiSmallMarginTop" wrap="Wrap">
+                                    <Button text="Acknowledge" press=".onAcknowledgeNote" class="sapUiSmallMarginEnd sapUiTinyMarginBottom"/>
+                                    <Button text="Open Ticket" press=".onOpenNoteTicket" class="sapUiSmallMarginEnd sapUiTinyMarginBottom"/>
+                                    <Button text="Mark as Applied" type="Emphasized" icon="sap-icon://accept" press=".onMarkNoteApplied" class="sapUiTinyMarginBottom"/>
+                                </HBox>
+                                <ObjectStatus
+                                    visible="{= ${compState>/selectedNote/ackState} === 'Acknowledged' }"
+                                    text="Acknowledged by analyst"
+                                    state="Information"
+                                    icon="sap-icon://accept"
+                                    class="sapUiSmallMarginTop"/>
+                            </VBox>
+                        </content>
+                    </Panel>
+                </HBox>
 
                 <!-- Component version table -->
                 <Panel>

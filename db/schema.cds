@@ -336,6 +336,9 @@ entity SecurityNote : managed {
     @title: 'Applied'
     applied         : Boolean  default false;
 
+    @title: 'Note URL'
+    noteUrl         : String(200);
+
     @title: 'Applied At'
     appliedAt       : Timestamp;
 }

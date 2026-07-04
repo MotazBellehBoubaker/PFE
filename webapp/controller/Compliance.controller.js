@@ -16,6 +16,8 @@ sap.ui.define([
                 compliantCount:  0,
                 outdatedCount:   0,
                 missingNotes:    0,
+                selectedNote:    null,
+                selectedNote:    null,
                 lastEvaluated:   "—",
                 warningText:     "Evaluating compliance...",
                 trendData:       [],
@@ -63,10 +65,74 @@ sap.ui.define([
             }.bind(this));
         },
 
-        onNotesUpdateFinished: function () {
-            var oBinding  = this.byId("notesTable").getBinding("items");
-            var iCount    = oBinding.getCurrentContexts().length;
-            this._oCompState.setProperty("/missingNotes", iCount);
+        onNotePress: function (oEvent) {
+            var oCtx = oEvent.getSource().getBindingContext("sentinelgrc");
+            if (!oCtx) return;
+            var oNote = Object.assign({}, oCtx.getObject());
+            oNote.ackState = null;
+            this._oCompState.setProperty("/selectedNote", oNote);
+        },
+        onCloseNoteDetail: function () {
+            this._oCompState.setProperty("/selectedNote", null);
+        },
+        onOpenNoteInSAP: function () {
+            var oNote = this._oCompState.getProperty("/selectedNote");
+            if (oNote) window.open("https://me.sap.com/notes/" + oNote.noteId, "_blank");
+        },
+        onAcknowledgeNote: function () {
+            var oNote = this._oCompState.getProperty("/selectedNote");
+            if (!oNote) return;
+            this._oCompState.setProperty("/selectedNote/ackState", "Acknowledged");
+            sap.m.MessageToast.show("Note " + oNote.noteId + " acknowledged");
+        },
+        onOpenNoteTicket: function () {
+            var oNote = this._oCompState.getProperty("/selectedNote");
+            if (!oNote) return;
+            var oModel  = this.getModel("sentinelgrc");
+            var oAction = oModel.bindContext("/openNoteTicket(...)");
+            oAction.setParameter("noteId", oNote.noteId);
+            sap.m.MessageToast.show("Creating Jira ticket for note " + oNote.noteId + "…");
+            oAction.execute().then(function () {
+                var oResult = oAction.getBoundContext().getObject();
+                sap.m.MessageBox.success(
+                    "Jira ticket " + oResult.ticketKey + " created for SAP Note " + oNote.noteId + ".",
+                    {
+                        actions: ["Open in Jira", sap.m.MessageBox.Action.CLOSE],
+                        onClose: function (sAct) {
+                            if (sAct === "Open in Jira") window.open(oResult.ticketUrl, "_blank");
+                        }
+                    }
+                );
+            }).catch(function (err) {
+                sap.m.MessageBox.error("Ticket creation failed: " + (err.message || "unknown"));
+            });
+        },
+        onMarkNoteApplied: function () {
+            var oNote = this._oCompState.getProperty("/selectedNote");
+            if (!oNote) return;
+            var oModel  = this.getModel("sentinelgrc");
+            var oAction = oModel.bindContext("/applyNote(...)");
+            oAction.setParameter("noteId", oNote.noteId);
+            oAction.execute().then(function () {
+                sap.m.MessageToast.show("Note " + oNote.noteId + " marked as applied");
+                this._oCompState.setProperty("/selectedNote", null);
+                var oTable = this.byId("notesTable");
+                if (oTable && oTable.getBinding("items")) oTable.getBinding("items").refresh();
+            }.bind(this)).catch(function (err) {
+                sap.m.MessageBox.error("Failed: " + (err.message || "unknown"));
+            });
+        },
+        onNotesUpdateFinished: function (oEvent) {
+            // Fetch true total count directly via plain REST $count (independent of growing window)
+            fetch("/security-service/SecurityNotes/$count?$filter=applied eq false")
+                .then(function (r) { return r.text(); })
+                .then(function (sCount) {
+                    this._oCompState.setProperty("/missingNotes", parseInt(sCount, 10) || 0);
+                }.bind(this))
+                .catch(function () {
+                    var iFallback = this.byId("notesTable").getBinding("items").getCurrentContexts().length;
+                    this._oCompState.setProperty("/missingNotes", iFallback);
+                }.bind(this));
             if (iCount > 0) {
                 this._oCompState.setProperty("/warningText",
                     iCount + " SAP Security Notes are missing on this system. Immediate patching recommended.");
@@ -155,12 +221,6 @@ sap.ui.define([
             MessageToast.show("Opening SAP Launchpad - Security Notes...");
         },
 
-        onNotePress: function (oEvent) {
-            var oCtx = oEvent.getSource().getBindingContext("sentinelgrc");
-            if (!oCtx) return;
-            var sNoteId = oCtx.getProperty("noteId");
-            MessageToast.show("Opening SAP Note " + sNoteId);
-        },
 
         onSchedulePatch: function (oEvent) {
             var oCtx  = oEvent.getSource().getBindingContext("sentinelgrc");
