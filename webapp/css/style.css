@@ -286,3 +286,60 @@ body.sentinelForceDark [id*="Page"],
 body.sentinelForceDark [id*="page"] {
     background-color: #12151b !important;
 }
+
+/* ── Sun/Moon theme pill ── */
+.sentinelThemePill {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 56px;
+    height: 26px;
+    padding: 0 6px;
+    background: #e2e8f0;
+    border-radius: 999px;
+    cursor: pointer;
+    margin: 0 8px;
+    box-sizing: border-box;
+    transition: background 0.28s ease;
+    user-select: none;
+}
+.sentinelThemePillIcon {
+    font-size: 13px;
+    line-height: 1;
+    z-index: 2;
+    color: #f59e0b;
+    pointer-events: none;
+}
+.sentinelThemePill .sentinelThemePillMoon {
+    color: #94a3b8;
+}
+.sentinelThemePillKnob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+}
+body.sentinelForceDark .sentinelThemePill,
+html[data-sap-ui-theme="sap_horizon_dark"] .sentinelThemePill {
+    background: #1e293b;
+}
+body.sentinelForceDark .sentinelThemePillKnob,
+html[data-sap-ui-theme="sap_horizon_dark"] .sentinelThemePillKnob {
+    transform: translateX(30px);
+    background: #0f172a;
+}
+body.sentinelForceDark .sentinelThemePillSun,
+html[data-sap-ui-theme="sap_horizon_dark"] .sentinelThemePillSun {
+    color: #64748b;
+}
+body.sentinelForceDark .sentinelThemePillMoon,
+html[data-sap-ui-theme="sap_horizon_dark"] .sentinelThemePillMoon {
+    color: #fbbf24;
+}

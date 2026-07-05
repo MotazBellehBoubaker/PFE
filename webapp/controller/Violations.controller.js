@@ -19,8 +19,45 @@ sap.ui.define([
                 totalCount: 0
             });
             this.getView().setModel(this._oDetailModel, "detail");
+            this._oKpiModel = new JSONModel({
+                total: 0, high: 0, medium: 0, low: 0, open: 0,
+                newestTime: "—", newestSub: "No violations yet"
+            });
+            this.getView().setModel(this._oKpiModel, "vioKpi");
         },
 
+        _loadKpis: function (sScanId) {
+            var oModel = this.getModel("sentinelgrc");
+            var that = this;
+            var oList = oModel.bindList("/Violations", null, null, null, {
+                $filter: "scanId eq " + sScanId,
+                $orderby: "detectedAt desc"
+            });
+            oList.requestContexts(0, 5000).then(function (aCtx) {
+                var iHigh = 0, iMedium = 0, iLow = 0, iOpen = 0;
+                var sNewest = "—", sNewestSub = "No violations";
+                aCtx.forEach(function (c) {
+                    var v = c.getObject();
+                    if (v.severity === "High")   iHigh++;
+                    if (v.severity === "Medium") iMedium++;
+                    if (v.severity === "Low")    iLow++;
+                    if (v.status   === "Open")   iOpen++;
+                });
+                if (aCtx.length) {
+                    var oLatest = aCtx[0].getObject();
+                    var d = new Date(oLatest.detectedAt);
+                    sNewest    = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                    sNewestSub = d.toLocaleDateString() + " · " + (oLatest.userId || "");
+                }
+                that._oKpiModel.setProperty("/total",      aCtx.length);
+                that._oKpiModel.setProperty("/high",       iHigh);
+                that._oKpiModel.setProperty("/medium",     iMedium);
+                that._oKpiModel.setProperty("/low",        iLow);
+                that._oKpiModel.setProperty("/open",       iOpen);
+                that._oKpiModel.setProperty("/newestTime", sNewest);
+                that._oKpiModel.setProperty("/newestSub",  sNewestSub);
+            });
+        },
         _onRouteMatched: function () {
             this._oDetailModel.setProperty("/selectedViolation", null);
             this._oDetailModel.setProperty("/remediationText", null);
@@ -50,6 +87,7 @@ sap.ui.define([
                     that._oDetailModel.setProperty("/selectedScanId", aScans[0].ID);
                     that._oDetailModel.setProperty("/selectedScanCode", aScans[0].scanCode);
                     that._applyFilters("", "", "", aScans[0].ID);
+                    that._loadKpis(aScans[0].ID);
                 }
             });
         },
@@ -61,6 +99,7 @@ sap.ui.define([
             this._oDetailModel.setProperty("/selectedScanId",   sScanId);
             this._oDetailModel.setProperty("/selectedScanCode", sScanCode);
             this._applyFilters(this._sSearchQuery, this._sSeverityFilter, this._sStatusFilter, sScanId);
+            this._loadKpis(sScanId);
         },
         onTableUpdateFinished: function (oEvent) {
             var iTotalCount = oEvent.getParameter("total");

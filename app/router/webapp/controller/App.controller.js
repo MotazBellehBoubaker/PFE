@@ -27,16 +27,28 @@ sap.ui.define([
 
         // ── Lifecycle ─────────────────────────────────────────────────────
         onInit: function () {
+            // Delegate click via document — works regardless of when the HTML control renders
+            var that = this;
+            if (!window._sentinelThemeBound) {
+                document.addEventListener("click", function (e) {
+                    var el = e.target && e.target.closest ? e.target.closest("#sentinelThemePill") : null;
+                    if (el) {
+                        e.preventDefault();
+                        that.onToggleTheme();
+                    }
+                });
+                window._sentinelThemeBound = true;
+            }
             // Restore theme preference from previous session
             try {
                 var sSaved = localStorage.getItem("sentinel_theme");
                 if (sSaved) {
                     sap.ui.getCore().applyTheme(sSaved);
-                    var that = this;
-                    setTimeout(function () {
-                        var oBtn = that.byId("themeToggleBtn");
-                        if (oBtn) oBtn.setIcon(sSaved === "sap_horizon_dark" ? "sap-icon://light-mode" : "sap-icon://dark-mode");
-                    }, 0);
+                    if (sSaved === "sap_horizon_dark") {
+                        document.documentElement.style.backgroundColor = "#12151b";
+                        document.body.style.backgroundColor = "#12151b";
+                        document.body.classList.add("sentinelForceDark");
+                    }
                 }
             } catch (e) {}
             this.getView().addStyleClass(
@@ -146,8 +158,6 @@ sap.ui.define([
                 document.body.classList.remove("sentinelForceDark");
             }
             try { localStorage.setItem("sentinel_theme", sNext); } catch (e) {}
-            var oBtn = this.byId("themeToggleBtn");
-            if (oBtn) oBtn.setIcon(sNext === "sap_horizon_dark" ? "sap-icon://light-mode" : "sap-icon://dark-mode");
         },
         onNotifications: function () {
             MessageToast.show("3 new alerts: 2 High violations, 1 compliance drop");

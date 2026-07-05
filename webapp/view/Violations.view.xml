@@ -19,6 +19,27 @@
         <content>
             <VBox class="sapUiMediumMargin">
 
+                <!-- KPI tiles -->
+                <HBox wrap="Wrap" class="sapUiSmallMarginBottom">
+                    <GenericTile header="Total Violations" subheader="This scan"         frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content><NumericContent value="{vioKpi>/total}"  valueColor="Neutral"  withMargin="false"/></content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile header="High Severity"    subheader="Critical exposure" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content><NumericContent value="{vioKpi>/high}"   valueColor="Error"    withMargin="false"/></content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile header="Medium Severity"  subheader="Elevated risk"     frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content><NumericContent value="{vioKpi>/medium}" valueColor="Critical" withMargin="false"/></content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile header="Low Severity"     subheader="Watchlist"         frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content><NumericContent value="{vioKpi>/low}"    valueColor="Good"     withMargin="false"/></content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile header="Open"             subheader="Awaiting action"   frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content><NumericContent value="{vioKpi>/open}"   valueColor="Critical" withMargin="false"/></content></TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile header="Newest Detected"  subheader="{vioKpi>/newestSub}" frameType="OneByOne" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                        <tileContent><TileContent><content><Text text="{vioKpi>/newestTime}" class="sentinelMono"/></content></TileContent></tileContent>
+                    </GenericTile>
+                </HBox>
                 <!-- Search + Filters -->
                 <Toolbar class="sapUiSmallMarginBottom">
                     <SearchField
