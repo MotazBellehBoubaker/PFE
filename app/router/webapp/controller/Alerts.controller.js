@@ -72,7 +72,57 @@ sap.ui.define([
             }
         },
         onManageRoutes: function () {
-            this.showToast("Opening alert route manager…");
+            if (!this._oRoutesDialog) {
+                this._oRoutesDialog = new sap.m.Dialog({
+                    title: "Alert Routes · SAP Alert Notification Service",
+                    contentWidth: "28rem",
+                    content: [
+                        new sap.m.VBox({
+                            items: [
+                                new sap.m.Text({
+                                    text: "SentinelGRC publishes scan-completion events to SAP Alert Notification Service (ANS). Email, Teams, and other channels are configured as subscriptions in the ANS cockpit.",
+                                    wrapping: true
+                                }).addStyleClass("sapUiSmallMarginBottom"),
+                                new sap.m.MessageStrip({
+                                    text: "Event type: SentinelGRC.ScanCompleted",
+                                    type: "Information",
+                                    showIcon: true
+                                }).addStyleClass("sapUiSmallMarginBottom")
+                            ]
+                        }).addStyleClass("sapUiSmallMargin")
+                    ],
+                    buttons: [
+                        new sap.m.Button({
+                            text: "Send Test Alert Now",
+                            type: "Emphasized",
+                            press: this.onSendTestAlert.bind(this)
+                        }),
+                        new sap.m.Button({
+                            text: "Open ANS Cockpit",
+                            press: function () {
+                                window.open("https://aymax-consulting-dev-azure-442muemm.authentication.eu20.hana.ondemand.com", "_blank");
+                            }
+                        }),
+                        new sap.m.Button({
+                            text: "Close",
+                            press: function () { this._oRoutesDialog.close(); }.bind(this)
+                        })
+                    ]
+                });
+            }
+            this._oRoutesDialog.open();
+        },
+        onSendTestAlert: function () {
+            var oModel  = this.getModel("sentinelgrc");
+            var oAction = oModel.bindContext("/sendScanAlert(...)");
+            sap.m.MessageToast.show("Publishing event to SAP Alert Notification Service…");
+            oAction.execute().then(function () {
+                var oResult = oAction.getBoundContext().getObject();
+                sap.m.MessageToast.show("Event published: " + oResult.eventType);
+                this._loadAlerts();
+            }.bind(this)).catch(function (err) {
+                sap.m.MessageBox.error("Failed to publish alert: " + (err.message || "unknown error"));
+            });
         }
     });
 });

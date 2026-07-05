@@ -198,7 +198,13 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
                 }));
 
                 console.log(`[SecurityHandler] Scan ${sScanCode} complete. ` +
+
                     `${aViolations.length} violations, risk: ${iRiskScore}`);
+
+                // Auto-publish alert to SAP Alert Notification Service
+                this.send('sendScanAlert', {}).catch(err => {
+                    console.log('[ANS] Auto-alert after scan failed (non-blocking):', err.message);
+                });
 
                 return {
                     scanId:     sScanId,
@@ -557,6 +563,147 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
             }
             console.log('[SecurityHandler] Recalculated risk scores for ' + iUpdated + ' scans');
             return { updated: iUpdated };
+        });
+
+        // ── sendScanAlert (SAP Alert Notification Service — publish event) ─
+        this.on('sendScanAlert', async (req) => {
+            try {
+                const oScan = await db.run(
+                    SELECT.one.from('sentinel.db.ScanResult')
+                        .where({ status: 'Complete' })
+                        .orderBy({ startedAt: 'desc' })
+                );
+                if (!oScan) return req.error(404, 'No completed scan to alert on');
+
+                const iHigh   = oScan.highCount   || 0;
+                const iMedium = oScan.mediumCount || 0;
+                const iLow    = oScan.lowCount    || 0;
+
+                let sSeverity = 'INFO';
+                if (iHigh >= 5)      sSeverity = 'FATAL';
+                else if (iHigh >= 1) sSeverity = 'ERROR';
+                else if (iMedium >= 3) sSeverity = 'WARNING';
+                else if (iMedium >= 1) sSeverity = 'NOTICE';
+
+                const sBody = 'Scan ' + oScan.scanCode + ' complete on ' +
+                    (oScan.completedAt || '').substring(0, 16).replace('T', ' ') + '. ' +
+                    'Users scanned: ' + (oScan.usersScanned || 0) + '. ' +
+                    'Violations: ' + (oScan.violationsFound || 0) +
+                    ' (' + iHigh + ' High, ' + iMedium + ' Medium, ' + iLow + ' Low). ' +
+                    'Compliance: ' + (oScan.complianceScore || 0) + '%. ' +
+                    'Risk score: ' + (oScan.riskScore || 0) + '/100.';
+
+                const sAnsUrl   = (process.env.ANS_URL || '').replace(/\/$/, '');
+                const sOAuthUrl = process.env.ANS_OAUTH_URL || '';
+                const sClientId = process.env.ANS_CLIENT_ID || '';
+                const sClientSecret = process.env.ANS_CLIENT_SECRET || '';
+                if (!sAnsUrl || !sOAuthUrl || !sClientId || !sClientSecret) {
+                    return req.error(500, 'ANS not configured — set ANS_URL, ANS_OAUTH_URL, ANS_CLIENT_ID, ANS_CLIENT_SECRET');
+                }
+
+                const https5 = require('https');
+
+                // 1. Get OAuth token
+                const oTokenUrl = new URL(sOAuthUrl);
+                const sTokenBody = 'grant_type=client_credentials';
+                const sBasic = Buffer.from(sClientId + ':' + sClientSecret).toString('base64');
+                const sToken = await new Promise((resolve, reject) => {
+                    const r = https5.request({
+                        hostname: oTokenUrl.hostname,
+                        path:     oTokenUrl.pathname + oTokenUrl.search,
+                        method:   'POST',
+                        headers: {
+                            'Authorization': 'Basic ' + sBasic,
+                            'Content-Type':  'application/x-www-form-urlencoded',
+                            'Content-Length': Buffer.byteLength(sTokenBody)
+                        }
+                    }, res => {
+                        let d = '';
+                        res.on('data', c => d += c);
+                        res.on('end', () => {
+                            if (res.statusCode >= 200 && res.statusCode < 300) {
+                                try { resolve(JSON.parse(d).access_token); } catch (e) { reject(e); }
+                            } else {
+                                reject(new Error('OAuth ' + res.statusCode + ': ' + d.slice(0, 300)));
+                            }
+                        });
+                    });
+                    r.on('error', reject);
+                    r.setTimeout(20000, () => r.destroy(new Error('OAuth timeout')));
+                    r.write(sTokenBody);
+                    r.end();
+                });
+
+                // 2. Publish the event to ANS Producer API
+                const oEvent = {
+                    eventType:   'SentinelGRC.ScanCompleted',
+                    resource: {
+                        resourceName: oScan.scanCode,
+                        resourceType: 'SapScan',
+                        resourceInstance: 'RD1'
+                    },
+                    severity:    sSeverity,
+                    category:    'ALERT',
+                    subject:     'SentinelGRC scan ' + oScan.scanCode + ' — ' +
+                                 (oScan.violationsFound || 0) + ' violations',
+                    body:        sBody,
+                    tags: (function () {
+                        var t = {};
+                        t['ans:source']    = 'SentinelGRC';
+                        t.scanCode         = oScan.scanCode;
+                        t.highCount        = String(iHigh);
+                        t.mediumCount      = String(iMedium);
+                        t.lowCount         = String(iLow);
+                        t.complianceScore  = String(oScan.complianceScore || 0);
+                        t.riskScore        = String(oScan.riskScore || 0);
+                        return t;
+                    })()
+                };
+                // clean invalid ans:source key (JSON can't have colon in identifier); replace after JSON.stringify
+                const sPayload = JSON.stringify(oEvent);
+
+                const oProdUrl = new URL(sAnsUrl + '/cf/producer/v1/resource-events');
+                const sResp = await new Promise((resolve, reject) => {
+                    const r = https5.request({
+                        hostname: oProdUrl.hostname,
+                        path:     oProdUrl.pathname,
+                        method:   'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + sToken,
+                            'Content-Type':  'application/json',
+                            'Accept':        'application/json',
+                            'Content-Length': Buffer.byteLength(sPayload)
+                        }
+                    }, res => {
+                        let d = '';
+                        res.on('data', c => d += c);
+                        res.on('end', () => {
+                            if (res.statusCode >= 200 && res.statusCode < 300) resolve(d);
+                            else reject(new Error('ANS ' + res.statusCode + ': ' + d.slice(0, 400)));
+                        });
+                    });
+                    r.on('error', reject);
+                    r.setTimeout(30000, () => r.destroy(new Error('ANS timeout')));
+                    r.write(sPayload);
+                    r.end();
+                });
+                console.log('[ANS] Published event for scan', oScan.scanCode, '- severity', sSeverity);
+
+                // Audit log
+                try {
+                    await db.run(INSERT.into('sentinel.db.AuditLog').entries({
+                        ID: cds.utils.uuid(), timestamp: new Date().toISOString(),
+                        action: 'ALERT', entityType: 'ScanResult', entityId: oScan.ID,
+                        performedBy: req.user?.id || 'system',
+                        details: JSON.stringify({ severity: sSeverity, scanCode: oScan.scanCode })
+                    }));
+                } catch (e) { console.log('[ANS] audit log skipped:', e.message); }
+
+                return { published: true, eventType: 'SentinelGRC.ScanCompleted' };
+            } catch (e) {
+                console.error('[ANS] Publish failed:', e.message);
+                return req.error(500, 'ANS publish failed: ' + e.message);
+            }
         });
 
         // ── acknowledgeViolation ─────────────────────────────────────────

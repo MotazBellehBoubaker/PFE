@@ -32,6 +32,7 @@ service SecurityService @(path: '/security-service') {
     action generateCriticalRolesReport() returns { fileName: String; base64: LargeString; };
     action generateSodRulesReport() returns { fileName: String; base64: LargeString; };
     action recalculateRiskScores() returns { updated: Integer; };
+    action sendScanAlert() returns { published: Boolean; eventType: String; };
     action openNoteTicket(noteId: String) returns { ticketKey: String; ticketUrl: String; };
     action resolveViolation(violationId: UUID) returns Boolean;
 
