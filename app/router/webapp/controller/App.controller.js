@@ -14,12 +14,17 @@ sap.ui.define([
     "sap/m/FormattedText",
     "sap/m/MessageToast",
     "sap/ui/core/Icon",
-    "sap/m/ObjectStatus"
+    "sap/m/ObjectStatus",
+    "sap/m/List",
+    "sap/m/StandardListItem",
+    "sap/m/CustomListItem",
+    "sap/ui/core/InvisibleText"
 ], function (
     BaseController, UserInfo, CopilotService,
     Popover, VBox, HBox, Text, Avatar, Button,
     Input, ScrollContainer, Title,
-    FormattedText, MessageToast, Icon, ObjectStatus
+    FormattedText, MessageToast, Icon, ObjectStatus,
+    List, StandardListItem, CustomListItem, InvisibleText
 ) {
     "use strict";
 
@@ -159,8 +164,63 @@ sap.ui.define([
             }
             try { localStorage.setItem("sentinel_theme", sNext); } catch (e) {}
         },
-        onNotifications: function () {
-            MessageToast.show("3 new alerts: 2 High violations, 1 compliance drop");
+        onNotifications: function (oEvent) {
+            var that = this;
+            if (!this._oNotifPopover) {
+                this._oNotifList = new List({ noDataText: "Loading…" });
+                this._oNotifPopover = new Popover({
+                    title: "Notifications",
+                    contentWidth: "22rem",
+                    contentMinHeight: "8rem",
+                    content: [this._oNotifList],
+                    footer: new sap.m.Bar({
+                        contentRight: [
+                            new Button({
+                                text: "View all in Alerts",
+                                type: "Transparent",
+                                press: function () {
+                                    that._oNotifPopover.close();
+                                    that.navTo("alerts");
+                                }
+                            })
+                        ]
+                    })
+                });
+                this.getView().addDependent(this._oNotifPopover);
+            }
+            this._loadNotifications();
+            this._oNotifPopover.openBy(oEvent.getSource());
+        },
+        _loadNotifications: function () {
+            var that = this;
+            var oModel = this.getModel("sentinelgrc");
+            oModel.bindList("/AuditLogs", null, null, null, {
+                $orderby: "timestamp desc"
+            }).requestContexts(0, 8).then(function (aCtx) {
+                that._oNotifList.destroyItems();
+                if (!aCtx.length) {
+                    that._oNotifList.setNoDataText("No recent activity");
+                    return;
+                }
+                aCtx.forEach(function (oCtx) {
+                    var o = oCtx.getObject();
+                    var sIcon = "sap-icon://activity-items";
+                    var sTitle = o.action + " · " + (o.entityType || "");
+                    if (o.action === "SCAN") { sIcon = "sap-icon://cause"; sTitle = "Scan completed"; }
+                    if (o.action === "ALERT") { sIcon = "sap-icon://email"; sTitle = "Alert dispatched"; }
+                    if (o.action === "TICKET") { sIcon = "sap-icon://post"; sTitle = "Jira ticket created"; }
+                    if (o.action === "ACKNOWLEDGE") { sIcon = "sap-icon://accept"; sTitle = "Violation acknowledged"; }
+                    var sTime = o.timestamp ? new Date(o.timestamp).toLocaleString() : "";
+                    that._oNotifList.addItem(new StandardListItem({
+                        icon: sIcon,
+                        title: sTitle,
+                        description: (o.performedBy || "system") + " · " + sTime,
+                        wrapping: true
+                    }));
+                });
+            }).catch(function () {
+                that._oNotifList.setNoDataText("Could not load notifications");
+            });
         },
 
         // ── Profile Popover ───────────────────────────────────────────────

@@ -46,18 +46,45 @@
                     </Panel>
 
                     <!-- Scan Schedule -->
-                    <Panel headerText="Scan Schedule · SAP Job Scheduling Service">
+                    <Panel headerText="Automated Scan Schedule">
                         <content>
                             <VBox class="sapUiSmallMargin">
+                                <HBox alignItems="Center" class="sapUiSmallMarginBottom">
+                                    <Label text="Enable automatic scans" class="sapUiSmallMarginEnd"/>
+                                    <Switch state="{settings>/schedule/enabled}"/>
+                                </HBox>
+                                <Label text="Scan Frequency"/>
+                                <Select
+                                    selectedKey="{settings>/schedule/frequencyKey}"
+                                    enabled="{settings>/schedule/enabled}"
+                                    change=".onFrequencyChange"
+                                    class="sapUiSmallMarginBottom">
+                                    <core:Item key="15min"   text="Every 15 minutes"/>
+                                    <core:Item key="30min"   text="Every 30 minutes"/>
+                                    <core:Item key="1hour"   text="Every hour"/>
+                                    <core:Item key="6hours"  text="Every 6 hours"/>
+                                    <core:Item key="12hours" text="Every 12 hours"/>
+                                    <core:Item key="daily"   text="Once a day (midnight)"/>
+                                    <core:Item key="weekly"  text="Once a week (Monday, midnight)"/>
+                                    <core:Item key="custom"  text="Custom (advanced)"/>
+                                </Select>
+                                <VBox visible="{= ${settings>/schedule/frequencyKey} === 'custom' }">
                                     <Label text="Cron Expression"/>
-                                    <Input value="{settings>/schedule/cron}" class="sentinelMono"/>
-                                    <Label text="Excessive Privilege Threshold (roles)"/>
-                                    <Input value="{settings>/schedule/threshold}" type="Number"/>
-                                    <Label text="Compliance Alert Threshold (%)"/>
-                                    <Input value="{settings>/schedule/complianceAlert}" type="Number"/>
-                        </VBox>
+                                    <Input value="{settings>/schedule/cron}" class="sentinelMono" enabled="{settings>/schedule/enabled}"/>
+                                    <Text text="Standard 5-field cron syntax (minute hour day month weekday). Minimum supported interval: 1 minute." class="sentinelSuggLabel sapUiTinyMarginTop sapUiSmallMarginBottom"/>
+                                </VBox>
+                                <Text text="{= 'Next scans will run: ' + ${settings>/schedule/frequencyLabel} }" class="sentinelSuggLabel sapUiSmallMarginBottom"/>
+                                <HBox class="sapUiSmallMarginTop">
+                                    <Label text="Last automatic run:" class="sapUiTinyMarginEnd"/>
+                                    <Text text="{settings>/schedule/lastRun}" class="sentinelMono"/>
+                                </HBox>
+                            </VBox>
                             <Toolbar style="padding: 0 1rem 1rem">
-                                <Button text="Save Settings" type="Emphasized" press=".onSaveSchedule"/>
+                                <Button
+                                    text="{= ${settings>/schedule/saving} ? 'Saving…' : 'Save Settings' }"
+                                    enabled="{= !${settings>/schedule/saving} }"
+                                    type="Emphasized"
+                                    press=".onSaveSchedule"/>
                             </Toolbar>
                         </content>
                     </Panel>
@@ -67,36 +94,16 @@
                         <content>
                             <VBox class="sapUiSmallMargin">
                                 <CustomListItem>
-                                    <HBox alignItems="Center" class="sapUiSmallMarginBottom">
+                                    <HBox alignItems="Center">
                                         <core:Icon src="sap-icon://email" color="Accent4" class="sapUiSmallMarginEnd" size="1.2rem"/>
                                         <VBox width="100%">
-                                            <Text text="Email · security-team@company.com" design="Bold"/>
-                                            <Text text="All High severity violations" class="sapUiSmallText"/>
+                                            <Text text="Email · motaz.boubaker@aymax.fr" design="Bold"/>
+                                            <Text text="Scan-completed events, all severities" class="sapUiSmallText"/>
                                         </VBox>
                                         <ObjectStatus text="Active" state="Success" class="sapUiSmallMarginBegin"/>
                                     </HBox>
                                 </CustomListItem>
-                                <CustomListItem>
-                                    <HBox alignItems="Center" class="sapUiSmallMarginBottom">
-                                        <core:Icon src="sap-icon://collaborate" color="Accent5" class="sapUiSmallMarginEnd" size="1.2rem"/>
-                                        <VBox width="100%">
-                                            <Text text="Teams Webhook · SEC-OPS channel"/>
-                                            <Text text="Critical roles and SAP_ALL assignments" class="sapUiSmallText"/>
-                                        </VBox>
-                                        <ObjectStatus text="Active" state="Success" class="sapUiSmallMarginBegin"/>
-                                    </HBox>
-                                </CustomListItem>
-                                <CustomListItem>
-                                    <HBox alignItems="Center">
-                                        <core:Icon src="sap-icon://share-2" color="Accent3" class="sapUiSmallMarginEnd" size="1.2rem"/>
-                                        <VBox width="100%">
-                                            <Text text="Webhook · https://hook.co/sentinel"/>
-                                            <Text text="Compliance score below 70%" class="sapUiSmallText"/>
-                                        </VBox>
-                                        <ObjectStatus text="Active" state="Success" class="sapUiSmallMarginBegin"/>
-                                    </HBox>
-                                </CustomListItem>
-                                <Button text="Add Route" icon="sap-icon://add" press=".onAddRoute" class="sapUiSmallMarginTop"/>
+                                <Button text="Manage in ANS Cockpit" icon="sap-icon://action" press=".onAddRoute" class="sapUiSmallMarginTop"/>
                             </VBox>
                         </content>
                     </Panel>
@@ -109,8 +116,7 @@
                                     <Label text="Token URL"/>      <Text text="https://aymax-consulting-dev-azure-442muemm.authentication.eu20.hana.ondemand.com" class="sentinelMono sapUiSmallText"/>
                                     <Label text="Scopes"/>
                                     <HBox>
-                                        <ObjectStatus text="SentinelGRC.SecurityAnalyst"  state="Information" class="sapUiSmallMarginEnd"/>
-                                        <ObjectStatus text="SentinelGRC.Admin" state="Information"/>
+                                        <ObjectStatus text="{settings>/userRole}" state="Information"/>
                                     </HBox>
                                     <Label text="Status"/>
                                     <ObjectStatus text="Configured" state="Success" icon="sap-icon://accept"/>
