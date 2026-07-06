@@ -46,7 +46,7 @@
                 <!-- Theme toggle (sun/moon pill) -->
                 <core:HTML content="&lt;div id=&quot;sentinelThemePill&quot; class=&quot;sentinelThemePill&quot; role=&quot;button&quot; tabindex=&quot;0&quot; title=&quot;Toggle light / dark mode&quot;&gt;&lt;span class=&quot;sentinelThemePillIcon sentinelThemePillSun&quot;&gt;☀&lt;/span&gt;&lt;span class=&quot;sentinelThemePillIcon sentinelThemePillMoon&quot;&gt;☾&lt;/span&gt;&lt;span class=&quot;sentinelThemePillKnob&quot;&gt;&lt;/span&gt;&lt;/div&gt;"/>
                 <!-- Notifications -->
-                <Button icon="sap-icon://bell" type="Transparent" press=".onNotifications" tooltip="Notifications"/>
+                <Button id="notifBellBtn" icon="sap-icon://bell" type="Transparent" press=".onNotifications" tooltip="Notifications"/>
 
                 <!-- Profile Avatar -->
                 <Avatar
