@@ -26,6 +26,15 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
     async init() {
         const db = await cds.connect.to('db');
 
+        // ── Initialize scan scheduler (node-cron) ────────────────────────
+        const scheduler = require('./scheduler');
+        scheduler.initScheduler(db, async (sTrigger) => {
+            global._sentinelNextTrigger = sTrigger;
+            const srv = await cds.connect.to('SecurityService');
+            await srv.send('triggerScan', {});
+        });
+
+
         // ── Seed SAP Security Notes catalog (independent of scans) ──────
         try {
             const sNow = new Date().toISOString();
@@ -54,13 +63,15 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
             const sNow     = new Date().toISOString();
             const sScanCode = 'SC-' + new Date().getFullYear() + '-' +
                               String(Date.now()).slice(-3);
-
+            const sTrigger = global._sentinelNextTrigger || 'Manual';
+            global._sentinelNextTrigger = null;
+            console.log(`[SecurityHandler] Starting scan ${sScanCode} (trigger: ${sTrigger})...`);
             console.log(`[SecurityHandler] Starting scan ${sScanCode}...`);
 
             // 1 — Create scan record (Running)
             await db.run(INSERT.into('sentinel.db.ScanResult').entries({
                 ID: sScanId, scanCode: sScanCode,
-                startedAt: sNow, trigger: 'Manual',
+                startedAt: sNow, trigger: sTrigger,
                 status: 'Running', createdAt: sNow, modifiedAt: sNow
             }));
 
@@ -543,6 +554,25 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
             } catch (e) {
                 return req.error(500, 'Report generation failed: ' + e.message);
             }
+        });
+
+        // ── saveScheduleConfig (Settings page: scan scheduling) ────────────
+        this.on('saveScheduleConfig', async (req) => {
+            const { enabled, cronExpression } = req.data;
+            const scheduler = require('./scheduler');
+            await db.run(
+                UPSERT.into('sentinel.db.ScheduleConfig').entries({
+                    ID: 'default', enabled: enabled, cronExpression: cronExpression,
+                    modifiedAt: new Date().toISOString()
+                })
+            );
+            if (enabled) {
+                scheduler.scheduleJob(cronExpression);
+            } else {
+                scheduler.stopSchedule();
+            }
+            console.log('[SecurityHandler] Schedule config saved:', enabled, cronExpression);
+            return true;
         });
 
         // ── recalculateRiskScores (backfill after formula change) ──────────
