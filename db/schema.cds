@@ -343,6 +343,26 @@ entity SecurityNote : managed {
     appliedAt       : Timestamp;
 }
 
+// ═══════════════════════════════════════════════════════════════════
+//  ScheduleConfig — controls automated scan scheduling
+// ═══════════════════════════════════════════════════════════════════
+@title: 'Scan Schedule'
+entity ScheduleConfig : managed {
+    key ID          : String(10) default 'default';
+
+    @title: 'Enabled'
+    enabled         : Boolean  default false;
+
+    @title: 'Cron Expression'
+    cronExpression  : String(50) default '0 */6 * * *';
+
+    @title: 'Last Run'
+    lastRun         : Timestamp;
+
+    @title: 'Next Run'
+    nextRun         : Timestamp;
+}
+
 
 // ═══════════════════════════════════════════════════════════════════
 //  AuditLog — Every significant action logged

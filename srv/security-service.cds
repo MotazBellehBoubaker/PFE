@@ -14,6 +14,7 @@ service SecurityService @(path: '/security-service') {
     entity Violations       as projection on db.Violation;
     entity RemediationTasks as projection on db.RemediationTask;
     entity SecurityNotes    as projection on db.SecurityNote;
+    entity ScheduleConfigs  as projection on db.ScheduleConfig;
 
     action triggerScan() returns {
         scanId     : String;
@@ -32,6 +33,7 @@ service SecurityService @(path: '/security-service') {
     action generateCriticalRolesReport() returns { fileName: String; base64: LargeString; };
     action generateSodRulesReport() returns { fileName: String; base64: LargeString; };
     action recalculateRiskScores() returns { updated: Integer; };
+    action saveScheduleConfig(enabled: Boolean, cronExpression: String) returns Boolean;
     action sendScanAlert() returns { published: Boolean; eventType: String; };
     action openNoteTicket(noteId: String) returns { ticketKey: String; ticketUrl: String; };
     action resolveViolation(violationId: UUID) returns Boolean;
