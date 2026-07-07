@@ -21,3 +21,7 @@ Thumbs.db
 
 # BAS
 .theia/
+
+# MTA build artifacts (never commit binary builds)
+mta_archives/
+*.mtar
