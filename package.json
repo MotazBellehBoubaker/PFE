@@ -1,7 +1,7 @@
 {
   "name": "sentinelgrc",
   "version": "1.0.0",
-  "description": "SentinelGRC – SAP GRC Security Platform on SAP BTP",
+  "description": "SentinelGRC \u2013 SAP GRC Security Platform on SAP BTP",
   "dependencies": {
     "@cap-js/hana": "^2",
     "@sap-cloud-sdk/connectivity": "^4.7.0",
@@ -22,7 +22,8 @@
   "scripts": {
     "start": "cds-serve",
     "dev": "cds watch --profile hybrid",
-    "build": "cds build --production"
+    "build": "cds build --production",
+    "test": "node --check srv/handlers/security-handler.js && node --check srv/handlers/s4-connector.js && node --check srv/handlers/sod-engine.js && node --check srv/handlers/compliance-engine.js && node --check srv/handlers/scheduler.js && node --check srv/handlers/report-generator.js && node --check srv/handlers/security-notes-catalog.js"
   },
   "private": true,
   "cds": {
