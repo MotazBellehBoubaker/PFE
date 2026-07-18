@@ -170,8 +170,12 @@ sap.ui.define([
                 this._oNotifList = new List({ noDataText: "Loading…" });
                 this._oNotifPopover = new Popover({
                     title: "Notifications",
+                    placement: sap.m.PlacementType.Bottom,
+                    showArrow: true,
                     contentWidth: "22rem",
                     contentMinHeight: "8rem",
+                    contentMaxHeight: "20rem",
+                    verticalScrolling: true,
                     content: [this._oNotifList],
                     footer: new sap.m.Bar({
                         contentRight: [
