@@ -1,0 +1,27 @@
+_schema-version: '3.3'
+ID: SentinelGRC-prod
+extends: SentinelGRC
+
+resources:
+  - name: sentinelgrc-xsuaa
+    parameters:
+      config:
+        xsappname: sentinelgrc-prod
+        tenant-mode: dedicated
+        role-collections:
+          - name: SentinelGRC_PROD_SecurityAnalyst
+            description: SentinelGRC Security Analyst (PROD)
+            role-template-references:
+              - $XSAPPNAME.SecurityAnalyst
+          - name: SentinelGRC_PROD_BasisAdmin
+            description: SentinelGRC Basis Administrator (PROD)
+            role-template-references:
+              - $XSAPPNAME.BasisAdmin
+          - name: SentinelGRC_PROD_CISO
+            description: SentinelGRC CISO / Executive (PROD)
+            role-template-references:
+              - $XSAPPNAME.CISO
+          - name: SentinelGRC_PROD_Admin
+            description: SentinelGRC Full Administrator (PROD)
+            role-template-references:
+              - $XSAPPNAME.Admin
