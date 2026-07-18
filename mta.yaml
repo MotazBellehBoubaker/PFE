@@ -63,9 +63,6 @@ resources:
       service-plan: application
       path: ./xs-security.json
 
-  # ── HANA Cloud ───────────────────────────────────────────────────
-  - name: sentinelgrc-hana-db
-    type: org.cloudfoundry.existing-service
 
   # ── Destination Service ──────────────────────────────────────────
   - name: sentinelgrc-destination
