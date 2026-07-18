@@ -5,5 +5,6 @@ extends: SentinelGRC
 resources:
   - name: sentinelgrc-xsuaa
     parameters:
-      xsuaa-config-overrides:
+      config:
         xsappname: sentinelgrc-qas
+        tenant-mode: dedicated
