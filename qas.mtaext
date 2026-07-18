@@ -8,3 +8,20 @@ resources:
       config:
         xsappname: sentinelgrc-qas
         tenant-mode: dedicated
+        role-collections:
+          - name: SentinelGRC_QAS_SecurityAnalyst
+            description: SentinelGRC Security Analyst (QAS)
+            role-template-references:
+              - $XSAPPNAME.SecurityAnalyst
+          - name: SentinelGRC_QAS_BasisAdmin
+            description: SentinelGRC Basis Administrator (QAS)
+            role-template-references:
+              - $XSAPPNAME.BasisAdmin
+          - name: SentinelGRC_QAS_CISO
+            description: SentinelGRC CISO / Executive (QAS)
+            role-template-references:
+              - $XSAPPNAME.CISO
+          - name: SentinelGRC_QAS_Admin
+            description: SentinelGRC Full Administrator (QAS)
+            role-template-references:
+              - $XSAPPNAME.Admin
