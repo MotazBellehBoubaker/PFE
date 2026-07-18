@@ -1,0 +1,9 @@
+_schema-version: '3.3'
+ID: SentinelGRC-qas
+extends: SentinelGRC
+
+resources:
+  - name: sentinelgrc-xsuaa
+    parameters:
+      xsuaa-config-overrides:
+        xsappname: sentinelgrc-qas
