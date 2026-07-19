@@ -3,7 +3,7 @@
   "sap.app": {
     "id": "sentinel.security",
     "type": "application",
-    "title": "SentinelGRC – SAP GRC Security Platform · Live Test",
+    "title": "SentinelGRC",
     "description": "Cloud-native SAP GRC security analysis and remediation platform",
     "applicationVersion": {
       "version": "1.0.0"
