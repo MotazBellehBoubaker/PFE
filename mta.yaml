@@ -28,6 +28,7 @@ modules:
       - name: sentinelgrc-hdi
       - name: sentinelgrc-destination
       - name: sentinelgrc-connectivity
+      - name: sentinelgrc-logging
 
   # ── HANA DB Deployer ─────────────────────────────────────────────
   - name: SentinelGRC-db-deployer
@@ -53,6 +54,7 @@ modules:
           url: ~{srv-url}
           forwardAuthToken: true
       - name: sentinelgrc-xsuaa
+      - name: sentinelgrc-logging
 
 resources:
   # ── XSUAA ────────────────────────────────────────────────────────
@@ -62,7 +64,6 @@ resources:
       service: xsuaa
       service-plan: application
       path: ./xs-security.json
-
 
   # ── Destination Service ──────────────────────────────────────────
   - name: sentinelgrc-destination
@@ -77,4 +78,8 @@ resources:
 
   # ── Connectivity Service (for SCC/on-premise) ────────────────────
   - name: sentinelgrc-connectivity
+    type: org.cloudfoundry.existing-service
+
+  # ── Cloud Logging Service ────────────────────────────────────────
+  - name: sentinelgrc-logging
     type: org.cloudfoundry.existing-service
