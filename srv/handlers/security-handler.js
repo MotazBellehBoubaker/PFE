@@ -95,10 +95,21 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
                 }
 
                 // 4 — Persist role assignments
+               // 4 — Persist role assignments
                 if (aRoleAssignments.length) {
+                    // Dedupe on (userId, roleId) — S/4 can return same combo
+                    // with different validity ranges; SoD only cares that the
+                    // user has the role at all.
+                    const seen = new Set();
+                    const aDeduped = aRoleAssignments.filter(r => {
+                        const key = `${r.userId}|${r.roleId}`;
+                        if (seen.has(key)) return false;
+                        seen.add(key);
+                        return true;
+                    });
                     await db.run(DELETE.from('sentinel.db.RoleAssignment'));
                     await db.run(INSERT.into('sentinel.db.RoleAssignment').entries(
-                        aRoleAssignments.map(r => ({ ...r, createdAt: sNow, modifiedAt: sNow }))
+                        aDeduped.map(r => ({ ...r, createdAt: sNow, modifiedAt: sNow }))
                     ));
                 }
 
