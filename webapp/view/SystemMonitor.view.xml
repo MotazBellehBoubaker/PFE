@@ -1,0 +1,384 @@
+<mvc:View
+    controllerName="sentinel.security.controller.SystemMonitor"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:layout="sap.ui.layout"
+    xmlns:viz="sap.viz.ui5.controls"
+    xmlns:viz.feeds="sap.viz.ui5.controls.common.feeds"
+    xmlns:viz.data="sap.viz.ui5.data">
+
+    <Page showNavButton="false" class="sentinelPage">
+        <customHeader>
+            <Bar>
+                <contentLeft>
+                    <Title text="System Monitor" level="H4"/>
+                    <ObjectStatus
+                        text="{= 'Host: ' + ${sysHealth>/systemInfo/hostname} + '  ·  Captured ' + ${sysHealth>/systemInfo/capturedAt} }"
+                        state="Information"
+                        icon="sap-icon://sys-monitor"
+                        class="sapUiSmallMarginBegin"/>
+                </contentLeft>
+                <contentRight>
+                    <Button
+                        text="Export Report"
+                        icon="sap-icon://download"
+                        press=".onExportSystemHealth"
+                        class="sapUiSmallMarginBegin"/>
+                </contentRight>
+            </Bar>
+        </customHeader>
+
+        <content>
+
+            <!-- ═══ TOP: Overall status strip ═══ -->
+            <MessageStrip
+                text="{sysHealth>/overallMessage}"
+                type="{sysHealth>/overallType}"
+                showIcon="true"
+                class="sapUiSmallMargin"/>
+
+            <!-- ═══ Row 1: 4 KPI tiles ═══ -->
+            <layout:Grid defaultSpan="XL3 L3 M6 S12" hSpacing="1" vSpacing="1" class="sapUiSmallMarginBeginEnd sapUiTinyMarginTop">
+                <GenericTile header="CPU Utilization"
+                             subheader="{= ${sysHealth>/currentCPU/idle} + '% idle · load ' + ${sysHealth>/currentCPU/loadAvg5min} }"
+                             frameType="OneByOne"
+                             class="sapUiTinyMargin">
+                    <tileContent>
+                        <TileContent>
+                            <content>
+                                <NumericContent
+                                    scale="%"
+                                    value="{= ${sysHealth>/currentCPU/user} + ${sysHealth>/currentCPU/system} }"
+                                    valueColor="{= (${sysHealth>/currentCPU/user} + ${sysHealth>/currentCPU/system}) > 80 ? 'Error' : (${sysHealth>/currentCPU/user} + ${sysHealth>/currentCPU/system}) > 60 ? 'Critical' : 'Good' }"
+                                    icon="sap-icon://performance"
+                                    withMargin="false"/>
+                            </content>
+                        </TileContent>
+                    </tileContent>
+                </GenericTile>
+
+                <GenericTile header="Memory Free"
+                             subheader="{= 'of ' + ${sysHealth>/currentMem/physicalGB} + ' GB total' }"
+                             frameType="OneByOne"
+                             class="sapUiTinyMargin">
+                    <tileContent>
+                        <TileContent>
+                            <content>
+                                <NumericContent
+                                    scale="%"
+                                    value="{sysHealth>/currentMem/freePercent}"
+                                    valueColor="{= ${sysHealth>/currentMem/freePercent} &lt; 5 ? 'Error' : ${sysHealth>/currentMem/freePercent} &lt; 10 ? 'Critical' : 'Good' }"
+                                    icon="sap-icon://database"
+                                    withMargin="false"/>
+                            </content>
+                        </TileContent>
+                    </tileContent>
+                </GenericTile>
+
+                <GenericTile header="/hana/log Used"
+                             subheader="HANA freezes at 95%"
+                             frameType="OneByOne"
+                             class="sapUiTinyMargin">
+                    <tileContent>
+                        <TileContent>
+                            <content>
+                                <NumericContent
+                                    scale="%"
+                                    value="{sysHealth>/hanaLog/usedPercent}"
+                                    valueColor="{= ${sysHealth>/hanaLog/usedPercent} >= 95 ? 'Error' : ${sysHealth>/hanaLog/usedPercent} >= 85 ? 'Critical' : 'Good' }"
+                                    icon="sap-icon://database"
+                                    withMargin="false"/>
+                            </content>
+                        </TileContent>
+                    </tileContent>
+                </GenericTile>
+
+                <GenericTile header="Filesystems at Risk"
+                             subheader="over 85% used"
+                             frameType="OneByOne"
+                             class="sapUiTinyMargin">
+                    <tileContent>
+                        <TileContent>
+                            <content>
+                                <NumericContent
+                                    value="{sysHealth>/atRiskCount}"
+                                    valueColor="{= ${sysHealth>/atRiskCount} > 0 ? 'Critical' : 'Good' }"
+                                    icon="sap-icon://alert"
+                                    withMargin="false"/>
+                            </content>
+                        </TileContent>
+                    </tileContent>
+                </GenericTile>
+            </layout:Grid>
+
+            <!-- ═══ Dedicated /hana/log warning card ═══ -->
+            <Panel
+                headerText="/hana/log · Critical HANA Volume Monitor"
+                expandable="false"
+                class="sapUiSmallMargin">
+                <headerToolbar>
+                    <OverflowToolbar>
+                        <Title text="/hana/log · Critical HANA Volume Monitor"/>
+                        <ToolbarSpacer/>
+                        <ObjectStatus
+                            text="{sysHealth>/hanaLog/statusText}"
+                            state="{sysHealth>/hanaLog/statusState}"
+                            icon="{sysHealth>/hanaLog/statusIcon}"/>
+                    </OverflowToolbar>
+                </headerToolbar>
+                <content>
+                    <VBox class="sapUiSmallMargin">
+                        <Text text="If /hana/log reaches 95% capacity, HANA freezes all write transactions and the database becomes unavailable to SentinelGRC and every other consuming application. SAP recommends acting at 85% and treating 90% as an emergency."
+                              class="sapUiTinyMarginBottom"/>
+                        <ProgressIndicator
+                            percentValue="{sysHealth>/hanaLog/usedPercent}"
+                            displayValue="{= ${sysHealth>/hanaLog/usedPercent} + '% used · ' + ${sysHealth>/hanaLog/freeGB} + ' GB free of ' + ${sysHealth>/hanaLog/totalGB} + ' GB' }"
+                            state="{sysHealth>/hanaLog/progressState}"
+                            height="1.75rem"/>
+                        <HBox class="sapUiSmallMarginTop" wrap="Wrap">
+                            <ObjectStatus text="{= 'Warn threshold: ' + ${sysHealth>/thresholds/warnPercent} + '%' }" state="Warning" icon="sap-icon://sys-minus" class="sapUiTinyMarginEnd"/>
+                            <ObjectStatus text="{= 'Critical threshold: ' + ${sysHealth>/thresholds/criticalPercent} + '%' }" state="Error" icon="sap-icon://error" class="sapUiTinyMarginEnd"/>
+                            <ObjectStatus text="{= 'Headroom to crash: ' + (${sysHealth>/thresholds/criticalPercent} - ${sysHealth>/hanaLog/usedPercent}) + '%' }"
+                                          state="Information" icon="sap-icon://measure"/>
+                        </HBox>
+                    </VBox>
+                </content>
+            </Panel>
+
+            <!-- ═══ Filesystem table ═══ -->
+            <Panel headerText="Filesystem Utilization" expandable="false" class="sapUiSmallMargin">
+                <Table
+                    items="{sysHealth>/filesystems}"
+                    growing="false"
+                    class="sapUiResponsiveMargin">
+                    <columns>
+                        <Column><Text text="Mount Point"/></Column>
+                        <Column hAlign="End"><Text text="Size"/></Column>
+                        <Column hAlign="End"><Text text="Free"/></Column>
+                        <Column hAlign="End" width="9rem"><Text text="Used %"/></Column>
+                        <Column hAlign="Center" width="7rem"><Text text="Status"/></Column>
+                        <Column><Text text="Note"/></Column>
+                    </columns>
+                    <items>
+                        <ColumnListItem>
+                            <cells>
+                                <ObjectIdentifier
+                                    title="{sysHealth>name}"
+                                    text="{= ${sysHealth>critical} ? 'HANA volume' : '' }"/>
+                                <Text text="{= ${sysHealth>sizeMB} > 1024000 ? (${sysHealth>sizeMB} / 1024 / 1024).toFixed(2) + ' TB' : (${sysHealth>sizeMB} / 1024).toFixed(1) + ' GB' }"/>
+                                <Text text="{= ${sysHealth>freeMB} > 1024000 ? (${sysHealth>freeMB} / 1024 / 1024).toFixed(2) + ' TB' : (${sysHealth>freeMB} / 1024).toFixed(1) + ' GB' }"/>
+                                <ProgressIndicator
+                                    percentValue="{sysHealth>usedPercent}"
+                                    displayValue="{= ${sysHealth>usedPercent} + '%'}"
+                                    state="{= ${sysHealth>usedPercent} >= ${sysHealth>critThreshold} ? 'Error' : ${sysHealth>usedPercent} >= ${sysHealth>warnThreshold} ? 'Warning' : 'Success' }"/>
+                                <ObjectStatus
+                                    text="{= ${sysHealth>usedPercent} >= ${sysHealth>critThreshold} ? 'Critical' : ${sysHealth>usedPercent} >= ${sysHealth>warnThreshold} ? 'Warning' : 'OK' }"
+                                    state="{= ${sysHealth>usedPercent} >= ${sysHealth>critThreshold} ? 'Error' : ${sysHealth>usedPercent} >= ${sysHealth>warnThreshold} ? 'Warning' : 'Success' }"
+                                    icon="{= ${sysHealth>usedPercent} >= ${sysHealth>critThreshold} ? 'sap-icon://error' : ${sysHealth>usedPercent} >= ${sysHealth>warnThreshold} ? 'sap-icon://alert' : 'sap-icon://accept' }"/>
+                                <Text text="{sysHealth>note}"/>
+                            </cells>
+                        </ColumnListItem>
+                    </items>
+                </Table>
+            </Panel>
+
+            <!-- ═══ Row: Memory breakdown + CPU chart ═══ -->
+            <layout:Grid defaultSpan="XL6 L6 M12 S12" hSpacing="1" vSpacing="1" class="sapUiSmallMarginBeginEnd">
+
+                <!-- Memory breakdown card -->
+                <Panel headerText="Memory Breakdown" expandable="false" class="sapUiSmallMargin">
+                    <VBox class="sapUiMediumMargin">
+
+                        <HBox justifyContent="SpaceBetween" alignItems="Center" class="sapUiSmallMarginBottom">
+                            <VBox>
+                                <Text text="PHYSICAL MEMORY" class="sentinelMonStatLabel"/>
+                                <ObjectNumber number="{= ${sysHealth>/currentMem/physicalGB} }" unit="GB" class="sentinelMonStatNumber"/>
+                            </VBox>
+                            <VBox>
+                                <Text text="FREE" class="sentinelMonStatLabel" textAlign="End"/>
+                                <ObjectNumber number="{= ${sysHealth>/currentMem/freeGB} }" unit="GB" state="Success" class="sentinelMonStatNumber"/>
+                            </VBox>
+                            <VBox>
+                                <Text text="USED" class="sentinelMonStatLabel" textAlign="End"/>
+                                <ObjectNumber number="{= ${sysHealth>/currentMem/usedGB} }" unit="GB" state="Warning" class="sentinelMonStatNumber"/>
+                            </VBox>
+                        </HBox>
+
+                        <ProgressIndicator
+                            percentValue="{= 100 - ${sysHealth>/currentMem/freePercent} }"
+                            displayValue="{= 'Memory: ' + (100 - ${sysHealth>/currentMem/freePercent}) + '% used' }"
+                            state="{= ${sysHealth>/currentMem/freePercent} &lt; 5 ? 'Error' : ${sysHealth>/currentMem/freePercent} &lt; 10 ? 'Warning' : 'Success' }"
+                            height="1.75rem"
+                            class="sapUiSmallMarginBottom"/>
+
+                        <layout:Grid defaultSpan="XL6 L6 M6 S6" hSpacing="1" vSpacing="0">
+                            <VBox>
+                                <Text text="SWAP FREE" class="sentinelMonStatLabelSmall"/>
+                                <Text text="{= ${sysHealth>/currentMem/swapFreeMB} + ' / ' + ${sysHealth>/currentMem/swapTotalMB} + ' MB' }" class="sentinelMonStatValueSmall"/>
+                            </VBox>
+                            <VBox>
+                                <Text text="PAGING (IN / OUT)" class="sentinelMonStatLabelSmall"/>
+                                <Text text="{= ${sysHealth>/currentMem/pageInKBs} + ' / ' + ${sysHealth>/currentMem/pageOutKBs} + ' KB/s' }" class="sentinelMonStatValueSmall"/>
+                            </VBox>
+                        </layout:Grid>
+
+                        <MessageStrip
+                            visible="{= ${sysHealth>/currentMem/pageInKBs} > 0 || ${sysHealth>/currentMem/pageOutKBs} > 0 }"
+                            text="Paging activity detected — the host is under memory pressure and swapping to disk. This will degrade HANA response times."
+                            type="Warning"
+                            showIcon="true"
+                            class="sapUiSmallMarginTop"/>
+                    </VBox>
+                </Panel>
+
+                <!-- CPU breakdown card -->
+                <Panel headerText="CPU State" expandable="false" class="sapUiSmallMargin">
+                    <VBox class="sapUiMediumMargin">
+
+                        <HBox justifyContent="SpaceBetween" alignItems="Center" class="sapUiSmallMarginBottom">
+                            <VBox>
+                                <Text text="CORES" class="sentinelMonStatLabel"/>
+                                <ObjectNumber number="{sysHealth>/systemInfo/cpuCount}" class="sentinelMonStatNumber"/>
+                            </VBox>
+                            <VBox>
+                                <Text text="IDLE" class="sentinelMonStatLabel" textAlign="End"/>
+                                <ObjectNumber number="{sysHealth>/currentCPU/idle}" unit="%" state="Success" class="sentinelMonStatNumber"/>
+                            </VBox>
+                            <VBox>
+                                <Text text="LOAD AVG (5 MIN)" class="sentinelMonStatLabel" textAlign="End"/>
+                                <ObjectNumber number="{sysHealth>/currentCPU/loadAvg5min}" class="sentinelMonStatNumber"/>
+                            </VBox>
+                        </HBox>
+
+                        <ProgressIndicator
+                            percentValue="{= ${sysHealth>/currentCPU/user} + ${sysHealth>/currentCPU/system} }"
+                            displayValue="{= 'CPU busy: ' + (${sysHealth>/currentCPU/user} + ${sysHealth>/currentCPU/system}) + '%' }"
+                            state="{= (${sysHealth>/currentCPU/user} + ${sysHealth>/currentCPU/system}) > 80 ? 'Error' : (${sysHealth>/currentCPU/user} + ${sysHealth>/currentCPU/system}) > 60 ? 'Warning' : 'Success' }"
+                            height="1.75rem"
+                            class="sapUiSmallMarginBottom"/>
+
+                        <layout:Grid defaultSpan="XL6 L6 M6 S6" hSpacing="1" vSpacing="0">
+                            <VBox>
+                                <Text text="USER %" class="sentinelMonStatLabelSmall"/>
+                                <Text text="{sysHealth>/currentCPU/user}" class="sentinelMonStatValueSmall"/>
+                            </VBox>
+                            <VBox>
+                                <Text text="SYSTEM %" class="sentinelMonStatLabelSmall"/>
+                                <Text text="{sysHealth>/currentCPU/system}" class="sentinelMonStatValueSmall"/>
+                            </VBox>
+                        </layout:Grid>
+                        <MessageStrip
+                            visible="{= ${sysHealth>/currentCPU/loadAvg5min} > ${sysHealth>/systemInfo/cpuCount} * 0.8 }"
+                            text="Load average is approaching or exceeding CPU count — the system is queuing processes."
+                            type="Warning"
+                            showIcon="true"
+                            class="sapUiSmallMarginTop"/>
+                    </VBox>
+                </Panel>
+
+            </layout:Grid>
+
+            <!-- ═══ Charts: filesystem usage + memory breakdown ═══ -->
+            <layout:Grid defaultSpan="XL6 L6 M12 S12" hSpacing="1" vSpacing="1" class="sapUiSmallMarginBeginEnd">
+
+                <Panel headerText="Filesystem Usage — sorted by % used" expandable="false" class="sapUiSmallMargin">
+                    <viz:Popover id="fsPopover"/>
+                    <viz:VizFrame
+                        vizType="bar"
+                        height="320px"
+                        width="100%"
+                        uiConfig="{applicationSet:'fiori'}"
+                        vizProperties="{
+                            plotArea:{ dataLabel:{ visible:true } },
+                            title:{ visible:false },
+                            valueAxis:{ title:{ visible:false } },
+                            categoryAxis:{ title:{ visible:false } },
+                            legend:{ visible:false }
+                        }">
+                        <viz:dataset>
+                            <viz.data:FlattenedDataset data="{sysHealth>/filesystems}">
+                                <viz.data:dimensions>
+                                    <viz.data:DimensionDefinition name="Mount" value="{sysHealth>name}"/>
+                                </viz.data:dimensions>
+                                <viz.data:measures>
+                                    <viz.data:MeasureDefinition name="Used %" value="{sysHealth>usedPercent}"/>
+                                </viz.data:measures>
+                            </viz.data:FlattenedDataset>
+                        </viz:dataset>
+                        <viz:feeds>
+                            <viz.feeds:FeedItem uid="valueAxis" type="Measure" values="Used %"/>
+                            <viz.feeds:FeedItem uid="categoryAxis" type="Dimension" values="Mount"/>
+                        </viz:feeds>
+                    </viz:VizFrame>
+                </Panel>
+
+                <Panel headerText="Memory Composition" expandable="false" class="sapUiSmallMargin">
+                    <viz:Popover id="memPopover"/>
+                    <viz:VizFrame
+                        vizType="donut"
+                        height="320px"
+                        width="100%"
+                        uiConfig="{applicationSet:'fiori'}"
+                        vizProperties="{
+                            plotArea:{ dataLabel:{ visible:true } },
+                            title:{ visible:false },
+                            legend:{ visible:true }
+                        }">
+                        <viz:dataset>
+                            <viz.data:FlattenedDataset data="{sysHealth>/memChartData}">
+                                <viz.data:dimensions>
+                                    <viz.data:DimensionDefinition name="Category" value="{sysHealth>label}"/>
+                                </viz.data:dimensions>
+                                <viz.data:measures>
+                                    <viz.data:MeasureDefinition name="MB" value="{sysHealth>valueMB}"/>
+                                </viz.data:measures>
+                            </viz.data:FlattenedDataset>
+                        </viz:dataset>
+                        <viz:feeds>
+                            <viz.feeds:FeedItem uid="size" type="Measure" values="MB"/>
+                            <viz.feeds:FeedItem uid="color" type="Dimension" values="Category"/>
+                        </viz:feeds>
+                    </viz:VizFrame>
+                </Panel>
+
+            </layout:Grid>
+
+            <!-- ═══ System info panel ═══ -->
+            <Panel headerText="Host Information" expandable="true" expanded="false" class="sapUiSmallMargin">
+                <VBox class="sapUiSmallMargin">
+                    <HBox class="sapUiTinyMarginBottom"><Label text="Hostname:" class="sentinelMonInfoLabel"/><Text text="{sysHealth>/systemInfo/hostname}"/></HBox>
+                    <HBox class="sapUiTinyMarginBottom"><Label text="Operating System:" class="sentinelMonInfoLabel"/><Text text="{sysHealth>/systemInfo/os}"/></HBox>
+                    <HBox class="sapUiTinyMarginBottom"><Label text="Manufacturer:" class="sentinelMonInfoLabel"/><Text text="{sysHealth>/systemInfo/manufacturer}"/></HBox>
+                    <HBox class="sapUiTinyMarginBottom"><Label text="Model:" class="sentinelMonInfoLabel"/><Text text="{sysHealth>/systemInfo/model}"/></HBox>
+                    <HBox class="sapUiTinyMarginBottom"><Label text="Hypervisor:" class="sentinelMonInfoLabel"/><Text text="{sysHealth>/systemInfo/hypervisor}"/></HBox>
+                    <HBox class="sapUiTinyMarginBottom"><Label text="CPU Cores:" class="sentinelMonInfoLabel"/><Text text="{sysHealth>/systemInfo/cpuCount}"/></HBox>
+                    <HBox class="sapUiTinyMarginBottom"><Label text="Enhanced Monitoring:" class="sentinelMonInfoLabel"/><ObjectStatus text="{sysHealth>/systemInfo/enhancedMonitoring}" state="Warning" icon="sap-icon://alert"/></HBox>
+                    <HBox class="sapUiTinyMarginBottom"><Label text="Data Captured At:" class="sentinelMonInfoLabel"/><Text text="{sysHealth>/systemInfo/capturedAt}"/></HBox>
+                </VBox>
+            </Panel>
+
+            <!-- ═══ Threshold Settings ═══ -->
+            <Panel headerText="Alert Threshold Settings" expandable="false" class="sapUiSmallMargin">
+                <VBox class="sapUiSmallMargin">
+                    <Text text="These thresholds apply to every monitored filesystem. An email alert is sent automatically the moment a volume crosses either value."
+                          class="sapUiSmallMarginBottom"/>
+                    <layout:Grid defaultSpan="XL4 L4 M6 S12" hSpacing="1" vSpacing="1">
+                        <VBox>
+                            <Label text="Warn Threshold (%)" labelFor="warnInput"/>
+                            <StepInput id="warnInput" value="{sysHealth>/settingsWarnInput}" min="1" max="99" step="1" width="100%"/>
+                        </VBox>
+                        <VBox>
+                            <Label text="Critical Threshold (%)" labelFor="critInput"/>
+                            <StepInput id="critInput" value="{sysHealth>/settingsCritInput}" min="1" max="99" step="1" width="100%"/>
+                        </VBox>
+                        <VBox justifyContent="End">
+                            <Button text="Save Thresholds" type="Emphasized" icon="sap-icon://save" press=".onSaveThresholds"/>
+                        </VBox>
+                    </layout:Grid>
+                </VBox>
+            </Panel>
+
+        </content>
+    </Page>
+</mvc:View>

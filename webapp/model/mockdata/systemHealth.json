@@ -1,0 +1,200 @@
+{
+  "systemInfo": {
+    "hostname": "ant-srv-dev",
+    "os": "Linux 5.14.21-150500.55.52-default (SLES)",
+    "manufacturer": "Microsoft Corporation",
+    "model": "Virtual Machine",
+    "hypervisor": "Hyper-V (VIRT_METHOD_MICROSOFT)",
+    "enhancedMonitoring": "NOT ACTIVE (see SAP note 2147139)",
+    "capturedAt": "20.07.2026 15:29:06",
+    "cpuCount": 18
+  },
+  "healthy": {
+    "cpu": {
+      "user": 6,
+      "system": 0,
+      "idle": 94,
+      "loadAvg5min": 0.96
+    },
+    "memory": {
+      "physicalMB": 196107,
+      "freeMB": 29753,
+      "freeInclCacheMB": 32121,
+      "freePercent": 15,
+      "swapTotalMB": 2047,
+      "swapFreeMB": 2047,
+      "pageInKBs": 0,
+      "pageOutKBs": 0
+    },
+    "filesystems": [
+      {
+        "name": "/hana/log",
+        "sizeMB": 235424,
+        "freeMB": 68121,
+        "usedPercent": 71,
+        "critical": true,
+        "warnThreshold": 85,
+        "critThreshold": 95,
+        "note": "HANA write-ahead log. If reaches 95% used, HANA freezes writes."
+      },
+      {
+        "name": "/hana/data",
+        "sizeMB": 7551917,
+        "freeMB": 1733473,
+        "usedPercent": 77,
+        "critical": true,
+        "warnThreshold": 85,
+        "critThreshold": 95,
+        "note": "HANA data volume \u2014 persistent tables."
+      },
+      {
+        "name": "/hana/shared",
+        "sizeMB": 235424,
+        "freeMB": 0,
+        "usedPercent": 100,
+        "critical": true,
+        "warnThreshold": 85,
+        "critThreshold": 95,
+        "note": "HANA installation + traces. Currently reported 100% \u2014 verify with df -h on host."
+      },
+      {
+        "name": "/usr/sap",
+        "sizeMB": 99760,
+        "freeMB": 85106,
+        "usedPercent": 15,
+        "critical": false,
+        "warnThreshold": 85,
+        "critThreshold": 95,
+        "note": "SAP kernel and instance directories."
+      },
+      {
+        "name": "/var",
+        "sizeMB": 98256,
+        "freeMB": 87335,
+        "usedPercent": 11,
+        "critical": false,
+        "warnThreshold": 85,
+        "critThreshold": 95,
+        "note": "System logs, journald, package caches."
+      },
+      {
+        "name": "/",
+        "sizeMB": 61440,
+        "freeMB": 16466,
+        "usedPercent": 73,
+        "critical": false,
+        "warnThreshold": 85,
+        "critThreshold": 95,
+        "note": "Root filesystem."
+      },
+      {
+        "name": "/backups",
+        "sizeMB": 19610,
+        "freeMB": 19610,
+        "usedPercent": 0,
+        "critical": false,
+        "warnThreshold": 85,
+        "critThreshold": 95,
+        "note": "Backup mount \u2014 currently empty."
+      }
+    ]
+  },
+  "critical": {
+    "cpu": {
+      "user": 68,
+      "system": 24,
+      "idle": 8,
+      "loadAvg5min": 14.7
+    },
+    "memory": {
+      "physicalMB": 196107,
+      "freeMB": 6203,
+      "freeInclCacheMB": 7100,
+      "freePercent": 3,
+      "swapTotalMB": 2047,
+      "swapFreeMB": 128,
+      "pageInKBs": 1240,
+      "pageOutKBs": 890
+    },
+    "filesystems": [
+      {
+        "name": "/hana/log",
+        "sizeMB": 235424,
+        "freeMB": 4708,
+        "usedPercent": 98,
+        "critical": true,
+        "warnThreshold": 85,
+        "critThreshold": 95,
+        "note": "HANA write-ahead log. If reaches 95% used, HANA freezes writes."
+      },
+      {
+        "name": "/hana/data",
+        "sizeMB": 7551917,
+        "freeMB": 302077,
+        "usedPercent": 96,
+        "critical": true,
+        "warnThreshold": 85,
+        "critThreshold": 95,
+        "note": "HANA data volume \u2014 persistent tables."
+      },
+      {
+        "name": "/hana/shared",
+        "sizeMB": 235424,
+        "freeMB": 0,
+        "usedPercent": 100,
+        "critical": true,
+        "warnThreshold": 85,
+        "critThreshold": 95,
+        "note": "HANA installation + traces. Currently at capacity."
+      },
+      {
+        "name": "/usr/sap",
+        "sizeMB": 99760,
+        "freeMB": 9976,
+        "usedPercent": 90,
+        "critical": false,
+        "warnThreshold": 85,
+        "critThreshold": 95,
+        "note": "SAP kernel and instance directories."
+      },
+      {
+        "name": "/var",
+        "sizeMB": 98256,
+        "freeMB": 7860,
+        "usedPercent": 92,
+        "critical": false,
+        "warnThreshold": 85,
+        "critThreshold": 95,
+        "note": "System logs, journald, package caches."
+      },
+      {
+        "name": "/",
+        "sizeMB": 61440,
+        "freeMB": 5527,
+        "usedPercent": 91,
+        "critical": false,
+        "warnThreshold": 85,
+        "critThreshold": 95,
+        "note": "Root filesystem."
+      },
+      {
+        "name": "/backups",
+        "sizeMB": 19610,
+        "freeMB": 19610,
+        "usedPercent": 0,
+        "critical": false,
+        "warnThreshold": 85,
+        "critThreshold": 95,
+        "note": "Backup mount \u2014 currently empty."
+      }
+    ]
+  },
+  "thresholds": {
+    "warnPercent": 85,
+    "criticalPercent": 95
+  },
+  "assumedGrowth": {
+    "hanaLogMBPerDay": 500,
+    "hanaDataMBPerDay": 2000
+  }
+}
