@@ -25,6 +25,8 @@ service SecurityService @(path: '/security-service') {
 
     action acknowledgeViolation(violationId: UUID, mitigatingControl: String) returns Boolean;
     action openTicket(violationId: UUID) returns { ticketKey: String; ticketUrl: String; };
+    action acknowledgeCriticalRole(assignmentId: UUID) returns Boolean;
+    action openCriticalRoleTicket(assignmentId: UUID) returns { ticketKey: String; ticketUrl: String; };
     action applyNote(noteId: String) returns Boolean;
     action generateReport() returns { fileName: String; base64: LargeString; };
     action generateComplianceReport() returns { fileName: String; base64: LargeString; };
@@ -50,7 +52,21 @@ service SecurityService @(path: '/security-service') {
         dueDate       : Timestamp
     ) returns RemediationTasks;
 
+    action updateRemediationTask(
+        taskId        : UUID,
+        violationId   : String,
+        userId        : String,
+        roleToRemove  : String,
+        title         : String,
+        notes         : String,
+        assignedTo    : String,
+        priority      : String,
+        scheduledDate : Timestamp,
+        dueDate       : Timestamp
+    ) returns RemediationTasks;
+
     action completeRemediationTask(taskId: UUID, completedBy: String) returns Boolean;
+    action deleteRemediationTask(taskId: UUID) returns Boolean;
 
     function getCurrentRiskScore() returns {
         riskScore       : Integer;

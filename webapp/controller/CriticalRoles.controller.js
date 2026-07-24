@@ -1,7 +1,8 @@
 sap.ui.define([
     "sentinel/security/controller/BaseController",
-    "sap/ui/model/json/JSONModel"
-], function (BaseController, JSONModel) {
+    "sap/ui/model/json/JSONModel",
+    "sap/m/MessageToast"
+], function (BaseController, JSONModel, MessageToast) {
     "use strict";
 
     return BaseController.extend("sentinel.security.controller.CriticalRoles", {
@@ -15,9 +16,12 @@ sap.ui.define([
                 uniqueUsers:   0
             });
             this.getView().setModel(this._oCritState, "critState");
+            this._oDetailModel = new JSONModel({ selectedRole: null });
+            this.getView().setModel(this._oDetailModel, "detail");
         },
 
         _onRouteMatched: function () {
+            this._oDetailModel.setProperty("/selectedRole", null);
             var that = this;
             var oModel = this.getModel("sentinelgrc");
             // Find latest scan ID and filter critical roles by it
@@ -86,27 +90,85 @@ sap.ui.define([
             this.showToast("Subscribed to critical role alerts");
         },
 
-        onRequestRemoval: function (oEvent) {
-            var oCtx     = oEvent.getSource().getBindingContext("sentinelgrc");
-            var sUserId  = oCtx.getProperty("userId");
-            var sProfile = oCtx.getProperty("profile");
+        // ── Detail panel ─────────────────────────────────────────────────
+        onRoleSelect: function (oEvent) {
+            var oItem = oEvent.getParameter("listItem");
+            var oCtx  = oItem.getBindingContext("sentinelgrc");
+            this._oDetailModel.setProperty("/selectedRole", oCtx.getObject());
+        },
+
+        onCloseDetail: function () {
+            this._oDetailModel.setProperty("/selectedRole", null);
+            var oTable = this.byId("criticalRolesTable");
+            if (oTable) oTable.removeSelections(true);
+        },
+
+        onAcknowledge: function () {
+            var oRole = this._oDetailModel.getProperty("/selectedRole");
+            if (!oRole) return;
+            var oModel  = this.getModel("sentinelgrc");
+            var oAction = oModel.bindContext("/acknowledgeCriticalRole(...)");
+            oAction.setParameter("assignmentId", oRole.ID);
+            oAction.execute().then(function () {
+                oRole.status = "Acknowledged";
+                this._oDetailModel.setProperty("/selectedRole", oRole);
+                MessageToast.show("Critical role acknowledged for " + oRole.userId);
+                var oTable = this.byId("criticalRolesTable");
+                if (oTable && oTable.getBinding("items")) {
+                    oTable.getBinding("items").refresh();
+                }
+            }.bind(this)).catch(function (err) {
+                MessageToast.show("Failed to acknowledge: " + (err.message || "unknown error"));
+            });
+        },
+
+        onOpenTicket: function () {
+            var oRole = this._oDetailModel.getProperty("/selectedRole");
+            if (!oRole) return;
+            var oModel  = this.getModel("sentinelgrc");
+            var oAction = oModel.bindContext("/openCriticalRoleTicket(...)");
+            oAction.setParameter("assignmentId", oRole.ID);
+            MessageToast.show("Creating Jira ticket…");
+            oAction.execute().then(function () {
+                var oResult = oAction.getBoundContext().getObject();
+                sap.m.MessageBox.success(
+                    "Jira ticket " + oResult.ticketKey + " created and assigned to the Basis team.",
+                    {
+                        actions: ["Open in Jira", sap.m.MessageBox.Action.CLOSE],
+                        onClose: function (sAct) {
+                            if (sAct === "Open in Jira") {
+                                window.open(oResult.ticketUrl, "_blank");
+                            }
+                        }
+                    }
+                );
+            }).catch(function (err) {
+                sap.m.MessageBox.error("Jira ticket creation failed: " + (err.message || "unknown"));
+            });
+        },
+
+        onRequestRemoval: function () {
+            var oRole = this._oDetailModel.getProperty("/selectedRole");
+            if (!oRole) return;
 
             this.getModel("appState").setProperty("/pendingRemediation", {
-                violationId:  "CRIT-" + sUserId,
-                userId:       sUserId,
-                userName:     sUserId,
-                roleToRemove: sProfile,
-                title:        "Remove " + sProfile + " from " + sUserId,
-                priority:     "High"
+                violationId:  "CRIT-" + oRole.userId,
+                userId:       oRole.userId,
+                userName:     oRole.userId,
+                roleToRemove: oRole.profile,
+                title:        "Remove " + oRole.profile + " from " + oRole.userId,
+                priority:     oRole.severity || "High"
             });
 
             this.navTo("remediation");
+            this.showToast("Opening Remediation Calendar for " + oRole.userId);
         },
 
-        onUserPress: function (oEvent) {
-            var oCtx    = oEvent.getSource().getBindingContext("sentinelgrc");
-            var sUserId = oCtx.getProperty("userId");
-            this.navTo("userDetail", { userId: sUserId });
+        onNavigateToUser: function () {
+            var oRole = this._oDetailModel.getProperty("/selectedRole");
+            if (oRole && oRole.userId) {
+                this.navTo("userDetail", { userId: oRole.userId });
+            }
         }
     });
 });

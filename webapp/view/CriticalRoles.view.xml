@@ -48,8 +48,12 @@
                     showIcon="true"
                     class="sapUiSmallMarginBottom"/>
 
-                <!-- Critical roles table -->
+                <!-- Critical roles table + Detail side by side -->
+                <HBox width="100%" alignItems="Stretch" renderType="Bare">
                 <Panel>
+                    <layoutData>
+                        <FlexItemData growFactor="3" baseSize="0" shrinkFactor="1"/>
+                    </layoutData>
                     <content>
                         <Table
                             id="criticalRolesTable"
@@ -57,27 +61,30 @@
                                 path: 'sentinelgrc>/CriticalRoleAssignments',
                                 parameters: { $orderby: 'criticalType asc' }
                             }"
-                            mode="None"
+                            mode="SingleSelectMaster"
+                            selectionChange=".onRoleSelect"
                             sticky="ColumnHeaders"
                             updateFinished=".onTableUpdateFinished">
                             <columns>
-                                <Column>               <Text text="User"/>             </Column>
-                                <Column width="12rem"> <Text text="Profile / Role"/>   </Column>
-                                <Column width="10rem"> <Text text="Critical Type"/>    </Column>
-                                <Column width="10rem"> <Text text="Scan"/>             </Column>
-                                <Column width="10rem"> <Text text="Action"/>           </Column>
+                                <Column width="7rem">  <Text text="Severity"/>       </Column>
+                                <Column>               <Text text="User"/>          </Column>
+                                <Column width="12rem"> <Text text="Profile / Role"/> </Column>
+                                <Column width="10rem"> <Text text="Critical Type"/>  </Column>
+                                <Column width="8rem">  <Text text="Status"/>         </Column>
+                                <Column width="10rem"> <Text text="Scan"/>           </Column>
                             </columns>
                             <items>
-                                <ColumnListItem>
+                                <ColumnListItem
+                                    highlight="{path: 'sentinelgrc>severity', formatter: '.formatter.rowHighlight'}"
+                                    type="Active">
                                     <cells>
-                                        <HBox alignItems="Center">
-                                            <Avatar
-                                                initials="{path: 'sentinelgrc>userId', formatter: '.formatter.userInitials'}"
-                                                backgroundColor="Accent6"
-                                                displaySize="XS"
-                                                class="sapUiSmallMarginEnd"/>
-                                            <Link text="{sentinelgrc>userId}" press=".onUserPress"/>
-                                        </HBox>
+                                        <ObjectStatus
+                                            text="{sentinelgrc>severity}"
+                                            state="{path: 'sentinelgrc>severity', formatter: '.formatter.severityState'}"
+                                            icon="{path: 'sentinelgrc>severity', formatter: '.formatter.severityIcon'}"/>
+                                        <ObjectIdentifier
+                                            title="{sentinelgrc>userName}"
+                                            text="{sentinelgrc>userId}"/>
                                         <ObjectStatus
                                             text="{sentinelgrc>profile}"
                                             state="{= ${sentinelgrc>profile} === 'SAP_ALL' ? 'Error' : 'Warning'}"
@@ -86,17 +93,81 @@
                                             text="{sentinelgrc>criticalType}"
                                             state="Error"
                                             icon="sap-icon://alert"/>
+                                        <ObjectStatus
+                                            text="{sentinelgrc>status}"
+                                            state="{path: 'sentinelgrc>status', formatter: '.formatter.violationStatusState'}"/>
                                         <Text text="{sentinelgrc>scanId}" class="sentinelMono"/>
-                                        <Button
-                                            text="Request Removal"
-                                            type="{= ${sentinelgrc>profile} === 'SAP_ALL' ? 'Reject' : 'Default'}"
-                                            press=".onRequestRemoval"/>
                                     </cells>
                                 </ColumnListItem>
                             </items>
                         </Table>
                     </content>
                 </Panel>
+
+                <!-- Detail Panel (right side) -->
+                <Panel
+                    id="roleDetailPanel"
+                    visible="{= !!${detail>/selectedRole} }"
+                    class="sapUiSmallMarginBegin">
+                    <layoutData>
+                        <FlexItemData growFactor="2" baseSize="0" shrinkFactor="1"/>
+                    </layoutData>
+                    <headerToolbar>
+                        <Toolbar>
+                            <Title text="{detail>/selectedRole/ID}" level="H5" class="sentinelMono"/>
+                            <ToolbarSpacer/>
+                            <ObjectStatus
+                                text="{detail>/selectedRole/severity}"
+                                state="{path: 'detail>/selectedRole/severity', formatter: '.formatter.severityState'}"/>
+                            <Button
+                                icon="sap-icon://decline"
+                                type="Transparent"
+                                tooltip="Close details"
+                                press=".onCloseDetail"/>
+                        </Toolbar>
+                    </headerToolbar>
+                    <content>
+                        <VBox class="sapUiSmallMargin">
+                            <Title text="{detail>/selectedRole/criticalType}" level="H5" class="sapUiSmallMarginBottom"/>
+
+                            <HBox class="sapUiSmallMarginBottom">
+                                <Label text="User:" width="100px"/>
+                                <Link text="{detail>/selectedRole/userName}" press=".onNavigateToUser"/>
+                                <Text text=" ({detail>/selectedRole/userId})" class="sentinelMono"/>
+                            </HBox>
+                            <HBox class="sapUiSmallMarginBottom">
+                                <Label text="Profile:" width="100px"/>
+                                <Text text="{detail>/selectedRole/profile}" class="sentinelMono sentinelChip"/>
+                            </HBox>
+                            <HBox class="sapUiSmallMarginBottom">
+                                <Label text="Critical Type:" width="100px"/>
+                                <Text text="{detail>/selectedRole/criticalType}" class="sentinelMono"/>
+                            </HBox>
+                            <HBox class="sapUiSmallMarginBottom">
+                                <Label text="Scan:" width="100px"/>
+                                <Text text="{detail>/selectedRole/scanId}" class="sentinelMono"/>
+                            </HBox>
+                            <HBox class="sapUiSmallMarginBottom">
+                                <Label text="Status:" width="100px"/>
+                                <ObjectStatus
+                                    text="{detail>/selectedRole/status}"
+                                    state="{path: 'detail>/selectedRole/status', formatter: '.formatter.violationStatusState'}"/>
+                            </HBox>
+
+                            <!-- Actions -->
+                            <HBox class="sapUiSmallMarginTop sapUiSmallMarginBottom">
+                                <Button text="Acknowledge"     type="Emphasized" press=".onAcknowledge" class="sapUiSmallMarginEnd"/>
+                                <Button text="Open Ticket"                       press=".onOpenTicket"  class="sapUiSmallMarginEnd"/>
+                                <Button
+                                    text="Request Removal"
+                                    icon="sap-icon://appointment-2"
+                                    type="{= ${detail>/selectedRole/profile} === 'SAP_ALL' ? 'Reject' : 'Default'}"
+                                    press=".onRequestRemoval"/>
+                            </HBox>
+                        </VBox>
+                    </content>
+                </Panel>
+                </HBox>
             </VBox>
         </content>
     </Page>

@@ -761,6 +761,109 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
             return true;
         });
 
+        // ── acknowledgeCriticalRole ───────────────────────────────────────
+        this.on('acknowledgeCriticalRole', async (req) => {
+            await db.run(
+                UPDATE('sentinel.db.CriticalRoleAssignment').set({
+                    status:     'Acknowledged',
+                    modifiedAt: new Date().toISOString()
+                }).where({ ID: req.data.assignmentId })
+            );
+            return true;
+        });
+
+        // ── openCriticalRoleTicket (Jira integration) ─────────────────────
+        this.on('openCriticalRoleTicket', async (req) => {
+            const { assignmentId } = req.data;
+            const oRole = await db.run(
+                SELECT.one.from('sentinel.db.CriticalRoleAssignment').where({ ID: assignmentId })
+            );
+            if (!oRole) return req.error(404, 'Critical role assignment not found');
+
+            const sJiraUrl = (process.env.JIRA_URL || '').replace(/\/$/, '');
+            const sEmail   = process.env.JIRA_EMAIL || '';
+            const sToken   = process.env.JIRA_TOKEN || '';
+            const sProject = process.env.JIRA_PROJECT || 'KAN';
+            if (!sJiraUrl || !sToken) return req.error(500, 'Jira not configured');
+
+            const sAuth = Buffer.from(sEmail + ':' + sToken).toString('base64');
+            // Severity → SLA due date (critical roles get a tighter SLA than regular violations)
+            const oSlaDays = { High: 1, Medium: 5, Low: 14 };
+            const dDue = new Date();
+            dDue.setDate(dDue.getDate() + (oSlaDays[oRole.severity] || 5));
+            const sDueDate = dDue.toISOString().substring(0, 10);
+            const oBody = {
+                fields: {
+                    project:   { key: sProject },
+                    issuetype: { name: 'Task' },
+                    priority:  { name: oRole.severity || 'High' },
+                    duedate:   sDueDate,
+                    labels:    ['sentinelgrc', 'critical-role', (oRole.criticalType || 'unknown').toLowerCase()],
+                    summary:   '[SentinelGRC] ' + (oRole.criticalType || 'Critical') + ' role assignment: ' +
+                               oRole.userId + ' — ' + oRole.profile,
+                    description: {
+                        type: 'doc', version: 1,
+                        content: [
+                            { type: 'paragraph', content: [{ type: 'text',
+                                text: 'Critical role assignment detected by SentinelGRC automated scan.' }] },
+                            { type: 'paragraph', content: [{ type: 'text',
+                                text: 'User: ' + oRole.userId + ' (' + (oRole.userName || '') + ')' }] },
+                            { type: 'paragraph', content: [{ type: 'text',
+                                text: 'Profile / Role: ' + oRole.profile }] },
+                            { type: 'paragraph', content: [{ type: 'text',
+                                text: 'Critical type: ' + (oRole.criticalType || '') }] },
+                            { type: 'paragraph', content: [{ type: 'text',
+                                text: 'Severity: ' + oRole.severity }] },
+                            { type: 'paragraph', content: [{ type: 'text',
+                                text: 'Action required: remove the profile/role via SU01 and confirm with SU53.' }] }
+                        ]
+                    }
+                }
+            };
+
+            const https6 = require('https');
+            const oUrl = new URL(sJiraUrl + '/rest/api/3/issue');
+            const sResp = await new Promise((resolve, reject) => {
+                const r = https6.request({
+                    hostname: oUrl.hostname,
+                    path:     oUrl.pathname,
+                    method:   'POST',
+                    headers: {
+                        'Authorization': 'Basic ' + sAuth,
+                        'Content-Type':  'application/json',
+                        'Accept':        'application/json'
+                    }
+                }, res => {
+                    let d = '';
+                    res.on('data', c => d += c);
+                    res.on('end', () => {
+                        if (res.statusCode >= 200 && res.statusCode < 300) resolve(d);
+                        else reject(new Error('Jira ' + res.statusCode + ': ' + d.slice(0, 300)));
+                    });
+                });
+                r.on('error', reject);
+                r.setTimeout(30000, () => r.destroy(new Error('Jira timeout')));
+                r.write(JSON.stringify(oBody));
+                r.end();
+            });
+            const oResp = JSON.parse(sResp);
+            console.log('[Jira] Created critical role ticket', oResp.key);
+
+            try {
+                await db.run(INSERT.into('sentinel.db.AuditLog').entries({
+                    ID: cds.utils.uuid(), timestamp: new Date().toISOString(),
+                    action: 'TICKET', entityType: 'CriticalRoleAssignment', entityId: assignmentId,
+                    performedBy: req.user?.id || 'system',
+                    details: JSON.stringify({ ticket: oResp.key })
+                }));
+            } catch (e) { console.log('[Jira] audit log skipped:', e.message); }
+
+            return {
+                ticketKey: oResp.key,
+                ticketUrl: sJiraUrl + '/browse/' + oResp.key
+            };
+        });
+
         // ── resolveViolation ─────────────────────────────────────────────
         this.on('resolveViolation', async (req) => {
             await db.run(
@@ -794,6 +897,36 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
             };
             await db.run(INSERT.into('sentinel.db.RemediationTask').entries(oTask));
             return oTask;
+        });
+
+        // ── updateRemediationTask ─────────────────────────────────────────
+        this.on('updateRemediationTask', async (req) => {
+            const d = req.data;
+            await db.run(
+                UPDATE('sentinel.db.RemediationTask').set({
+                    violationId:   d.violationId,
+                    userId:        d.userId,
+                    roleToRemove:  d.roleToRemove,
+                    title:         d.title,
+                    notes:         d.notes,
+                    assignedTo:    d.assignedTo,
+                    priority:      d.priority || 'High',
+                    scheduledDate: d.scheduledDate,
+                    dueDate:       d.dueDate,
+                    modifiedAt:    new Date().toISOString()
+                }).where({ ID: d.taskId })
+            );
+            return db.run(
+                SELECT.one.from('sentinel.db.RemediationTask').where({ ID: d.taskId })
+            );
+        });
+
+        // ── deleteRemediationTask ─────────────────────────────────────────
+        this.on('deleteRemediationTask', async (req) => {
+            await db.run(
+                DELETE.from('sentinel.db.RemediationTask').where({ ID: req.data.taskId })
+            );
+            return true;
         });
 
         // ── completeRemediationTask ──────────────────────────────────────

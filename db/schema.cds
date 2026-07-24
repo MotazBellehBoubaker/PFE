@@ -268,8 +268,9 @@ entity RemediationTask : cuid, managed {
     @title: 'Task Code'
     taskCode        : String(20);
 
+    // 36 chars so a real Violation / CriticalRoleAssignment UUID fits
     @title: 'Violation ID'
-    violationId     : String(20);
+    violationId     : String(36);
 
     @title: 'Affected User ID'
     userId          : String(12);

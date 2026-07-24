@@ -85,8 +85,12 @@
                     </rows>
                 </PlanningCalendar>
 
-                <!-- Tasks Table -->
-                <Panel class="sapUiSmallMarginTop">
+                <!-- Tasks Table + Detail side by side -->
+                <HBox width="100%" alignItems="Stretch" renderType="Bare" class="sapUiSmallMarginTop">
+                <Panel>
+                    <layoutData>
+                        <FlexItemData growFactor="3" baseSize="0" shrinkFactor="1"/>
+                    </layoutData>
                     <headerToolbar>
                         <Toolbar>
                             <Title text="All Remediation Tasks" level="H5"/>
@@ -94,7 +98,10 @@
                     </headerToolbar>
                     <content>
                         <Table id="allTasksList" growing="true" growingThreshold="20"
-                            noDataText="No remediation tasks found" mode="None" sticky="ColumnHeaders">
+                            noDataText="No remediation tasks found"
+                            mode="SingleSelectMaster"
+                            selectionChange=".onTaskSelect"
+                            sticky="ColumnHeaders">
                             <columns>
                                 <Column width="7rem"><Text text="Task ID"/></Column>
                                 <Column width="7rem"><Text text="Priority"/></Column>
@@ -108,6 +115,82 @@
                         </Table>
                     </content>
                 </Panel>
+
+                <!-- Detail Panel (right side) -->
+                <Panel
+                    id="taskDetailPanel"
+                    visible="{= !!${taskDetail>/selectedTask} }"
+                    class="sapUiSmallMarginBegin">
+                    <layoutData>
+                        <FlexItemData growFactor="2" baseSize="0" shrinkFactor="1"/>
+                    </layoutData>
+                    <headerToolbar>
+                        <Toolbar>
+                            <Title text="{taskDetail>/selectedTask/id}" level="H5" class="sentinelMono"/>
+                            <ToolbarSpacer/>
+                            <ObjectStatus
+                                text="{taskDetail>/selectedTask/priority}"
+                                state="{path: 'taskDetail>/selectedTask/priority', formatter: '.formatter.severityState'}"/>
+                            <Button
+                                icon="sap-icon://decline"
+                                type="Transparent"
+                                tooltip="Close details"
+                                press=".onCloseTaskDetail"/>
+                        </Toolbar>
+                    </headerToolbar>
+                    <content>
+                        <VBox class="sapUiSmallMargin">
+                            <Title text="{taskDetail>/selectedTask/title}" level="H5" class="sapUiSmallMarginBottom"/>
+
+                            <HBox class="sapUiSmallMarginBottom">
+                                <Label text="User:" width="110px"/>
+                                <Text text="{taskDetail>/selectedTask/userId}" class="sentinelMono"/>
+                            </HBox>
+                            <HBox class="sapUiSmallMarginBottom">
+                                <Label text="Remove:" width="110px"/>
+                                <Text text="{taskDetail>/selectedTask/roleToRemove}" class="sentinelMono sentinelChip"/>
+                            </HBox>
+                            <HBox class="sapUiSmallMarginBottom">
+                                <Label text="Reference:" width="110px"/>
+                                <Text text="{taskDetail>/selectedTask/violationId}" class="sentinelMono"/>
+                            </HBox>
+                            <HBox class="sapUiSmallMarginBottom">
+                                <Label text="Assigned To:" width="110px"/>
+                                <Text text="{taskDetail>/selectedTask/assignedTo}"/>
+                            </HBox>
+                            <HBox class="sapUiSmallMarginBottom">
+                                <Label text="Scheduled:" width="110px"/>
+                                <Text text="{path: 'taskDetail>/selectedTask/start', formatter: '.formatDate'}" class="sentinelMono"/>
+                            </HBox>
+                            <HBox class="sapUiSmallMarginBottom">
+                                <Label text="Due:" width="110px"/>
+                                <Text text="{path: 'taskDetail>/selectedTask/end', formatter: '.formatDate'}" class="sentinelMono"/>
+                            </HBox>
+                            <HBox class="sapUiSmallMarginBottom">
+                                <Label text="Status:" width="110px"/>
+                                <ObjectStatus
+                                    text="{taskDetail>/selectedTask/status}"
+                                    state="{path: 'taskDetail>/selectedTask/status', formatter: '.formatStatusState'}"/>
+                            </HBox>
+                            <HBox class="sapUiSmallMarginBottom">
+                                <Label text="Notes:" width="110px"/>
+                                <Text text="{taskDetail>/selectedTask/notes}" wrapping="true"/>
+                            </HBox>
+
+                            <!-- Actions -->
+                            <HBox class="sapUiSmallMarginTop sapUiSmallMarginBottom">
+                                <Button text="Edit" icon="sap-icon://edit" type="Emphasized"
+                                    press=".onEditSelectedTask" class="sapUiSmallMarginEnd"/>
+                                <Button text="Mark as Done" icon="sap-icon://accept" type="Accept"
+                                    press=".onCompleteSelectedTask" class="sapUiSmallMarginEnd"
+                                    enabled="{= ${taskDetail>/selectedTask/status} !== 'Done' }"/>
+                                <Button text="Delete" icon="sap-icon://delete" type="Reject"
+                                    press=".onDeleteSelectedTask"/>
+                            </HBox>
+                        </VBox>
+                    </content>
+                </Panel>
+                </HBox>
 
             </VBox>
         </content>
