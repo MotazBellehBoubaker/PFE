@@ -118,7 +118,7 @@ sap.ui.define([
             var oItem      = oEvent.getParameter('item');
             var sKey       = oItem.getKey ? oItem.getKey() : '';
             var bIsAnalyst = this.getModel('appState').getProperty('/isAnalyst');
-            var aBasisOnly = ['overview', 'scans', 'remediation'];
+            var aBasisOnly = ['overview', 'scans', 'remediation', 'systemMonitor'];
             if (!bIsAnalyst && aBasisOnly.indexOf(sKey) === -1) {
                 sap.m.MessageToast.show('Access restricted to your role');
                 return;
@@ -126,7 +126,8 @@ sap.ui.define([
             var mMap = {
                 overview:'overview', violations:'violations', users:'users',
                 critical:'critical', compliance:'compliance', rules:'rules',
-                scans:'scans', remediation:'remediation', alerts:'alerts', settings:'settings'
+                scans:'scans', remediation:'remediation', alerts:'alerts',
+                systemMonitor:'systemMonitor', settings:'settings'
             };
             if (mMap[sKey]) this.navTo(mMap[sKey]);
         },

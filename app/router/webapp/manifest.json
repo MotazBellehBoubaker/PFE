@@ -214,6 +214,11 @@
           "name": "remediation",
           "pattern": "remediation",
           "target": "remediation"
+        },
+        {
+          "name": "systemMonitor",
+          "pattern": "system-monitor",
+          "target": "systemMonitor"
         }
       ],
       "targets": {
@@ -259,6 +264,10 @@
         },
         "remediation": {
           "viewName": "RemediationCalendar",
+          "viewLevel": 1
+        },
+        "systemMonitor": {
+          "viewName": "SystemMonitor",
           "viewLevel": 1
         }
       }

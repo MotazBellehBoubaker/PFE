@@ -73,6 +73,7 @@
                     <tnt:NavigationListItem key="scans"       text="Scan History"           icon="sap-icon://electrocardiogram"/>
                     <tnt:NavigationListItem key="remediation" text="Remediation Calendar"   icon="sap-icon://appointment-2"/>
                     <tnt:NavigationListItem key="alerts"      text="Alerts"                 icon="sap-icon://bell" visible="{appState>/isAnalyst}"/>
+                    <tnt:NavigationListItem key="systemMonitor" text="System Monitor"       icon="sap-icon://sys-monitor"/>
                     <tnt:NavigationListItem key="settings"    text="Settings"               icon="sap-icon://settings" visible="{appState>/isAnalyst}"/>
                 </tnt:NavigationList>
             </tnt:SideNavigation>
