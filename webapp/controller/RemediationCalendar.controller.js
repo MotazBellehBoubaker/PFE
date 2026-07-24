@@ -376,7 +376,7 @@ sap.ui.define([
         },
 
         // ── Save — forces calendar refresh via setProperty ───────────────
-        handleDialogSaveButton: function () {
+      handleDialogSaveButton: async function () {
             var oStartDate = this.byId("startDate");
             var oEndDate   = this.byId("endDate");
 
@@ -390,41 +390,57 @@ sap.ui.define([
             if (iPersonIdx < 0) iPersonIdx = 0;
             var sPriority  = this.byId("selectPriority").getSelectedKey() || "High";
             var mType      = { "High": "Type01", "Medium": "Type03", "Low": "Type08" };
+            var sAssignedTo = this.byId("selectPerson").getSelectedItem()
+                ? this.byId("selectPerson").getSelectedItem().getText() : "Basis Admin";
 
-            // Read dates directly from the DateTimePicker
             var oStart = oStartDate.getDateValue();
             var oEnd   = oEndDate.getDateValue();
 
+            var oODataModel = this.getOwnerComponent().getModel();
+            var oAction = oODataModel.bindContext("/saveRemediationTask(...)");
+            oAction.setParameter("violationId",   this.byId("violationRef").getValue() || "");
+            oAction.setParameter("userId",        this.byId("affectedUser").getValue() || "");
+            oAction.setParameter("roleToRemove",  this.byId("roleToRemove").getValue() || "");
+            oAction.setParameter("title",         this.byId("inputTitle").getValue() || "Remediation Task");
+            oAction.setParameter("notes",         this.byId("moreInfo").getValue() || "");
+            oAction.setParameter("assignedTo",    sAssignedTo);
+            oAction.setParameter("priority",      sPriority);
+            oAction.setParameter("scheduledDate", oStart.toISOString());
+            oAction.setParameter("dueDate",       oEnd.toISOString());
+
+            var oSavedTask;
+            try {
+                await oAction.execute();
+                oSavedTask = oAction.getBoundContext().getObject();
+            } catch (oError) {
+                MessageToast.show("Failed to save remediation task: " + (oError.message || "unknown error"));
+                return;
+            }
+
             var oNewTask = {
-                id:           "REM-" + Date.now().toString().slice(-5),
+                id:           oSavedTask.taskCode || ("REM-" + Date.now().toString().slice(-5)),
                 start:        UI5Date.getInstance(oStart.getTime()),
                 end:          UI5Date.getInstance(oEnd.getTime()),
-                title:        this.byId("inputTitle").getValue() || "Remediation Task",
-                info:         this.byId("moreInfo").getValue() || "",
-                violationId:  this.byId("violationRef").getValue() || "",
-                userId:       this.byId("affectedUser").getValue() || "",
-                userName:     this.byId("affectedUser").getValue() || "",
-                roleToRemove: this.byId("roleToRemove").getValue() || "",
-                priority:     sPriority,
-                status:       "Scheduled",
+                title:        oSavedTask.title,
+                info:         oSavedTask.notes || "",
+                violationId:  oSavedTask.violationId || "",
+                userId:       oSavedTask.userId || "",
+                userName:     oSavedTask.userId || "",
+                roleToRemove: oSavedTask.roleToRemove || "",
+                priority:     oSavedTask.priority,
+                status:       oSavedTask.status,
                 type:         mType[sPriority] || "Type01",
                 tentative:    false
             };
-
-            // CRITICAL: use setProperty on the specific path so binding updates
             var sAppsPath = "/people/" + iPersonIdx + "/appointments";
             var aApps = oModel.getProperty(sAppsPath) || [];
             aApps.push(oNewTask);
             oModel.setProperty(sAppsPath, aApps);
-            // Force full re-render of PlanningCalendar
             var aPeople = oModel.getProperty("/people");
             oModel.setProperty("/people", aPeople.slice());
-
             this._pCreateDialog.then(function (oD) { oD.close(); });
             this._buildTasksTable();
-            MessageToast.show("Task " + oNewTask.id + " scheduled for " +
-                (this.byId("selectPerson").getSelectedItem()
-                    ? this.byId("selectPerson").getSelectedItem().getText() : "Basis Admin"));
+            MessageToast.show("Task " + oNewTask.id + " scheduled for " + sAssignedTo);
         },
 
         handleDialogCancelButton: function () {
