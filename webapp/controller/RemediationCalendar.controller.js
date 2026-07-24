@@ -396,7 +396,7 @@ sap.ui.define([
             var oStart = oStartDate.getDateValue();
             var oEnd   = oEndDate.getDateValue();
 
-            var oODataModel = this.getOwnerComponent().getModel("sentinelgrc");
+            var oODataModel = this.getOwnerComponent().getModel();
             var oAction = oODataModel.bindContext("/saveRemediationTask(...)");
             oAction.setParameter("violationId",   this.byId("violationRef").getValue() || "");
             oAction.setParameter("userId",        this.byId("affectedUser").getValue() || "");
