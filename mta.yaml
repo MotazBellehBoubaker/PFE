@@ -29,6 +29,7 @@ modules:
       - name: sentinelgrc-destination
       - name: sentinelgrc-connectivity
       - name: sentinelgrc-logging
+      - name: sentinelgrc-credstore
 
   # ── HANA DB Deployer ─────────────────────────────────────────────
   - name: SentinelGRC-db-deployer
@@ -83,3 +84,15 @@ resources:
   # ── Cloud Logging Service ────────────────────────────────────────
   - name: sentinelgrc-logging
     type: org.cloudfoundry.existing-service
+
+  # ── Credential Store (third-party secrets, e.g. the Jira API token) ──
+  # Authentication must be "basic": the plan default is "mtls", whose binding
+  # carries certificate/key instead of the username/password the client uses.
+  - name: sentinelgrc-credstore
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: credstore
+      service-plan: free
+      config:
+        authentication:
+          type: basic

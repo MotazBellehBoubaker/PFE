@@ -20,6 +20,38 @@ const {
 } = require('./compliance-engine');
 const { SECURITY_NOTES } = require('./security-notes-catalog');
 const { buildReport, buildComplianceReport, buildViolationsReport, buildUsersReport, buildCriticalRolesReport, buildSodRulesReport } = require('./report-generator');
+const { readPassword, isConfigured: isCredStoreBound } = require('../lib/credential-store');
+
+/**
+ * Jira connection details.
+ *
+ * The API token comes from the Credential Store when the service is bound; the
+ * credential's `username` field carries the account e-mail, so one entry holds
+ * the whole login. Environment variables remain the fallback so `cds watch`
+ * still works locally, and so a Credential Store outage degrades to the old
+ * behaviour instead of breaking ticket creation.
+ *
+ * URL and project key are not secrets and stay in the environment.
+ */
+async function getJiraConfig() {
+    const sJiraUrl = (process.env.JIRA_URL || '').replace(/\/$/, '');
+    const sProject = process.env.JIRA_PROJECT || 'KAN';
+    let   sEmail   = process.env.JIRA_EMAIL || '';
+    let   sToken   = process.env.JIRA_TOKEN || '';
+
+    if (isCredStoreBound()) {
+        try {
+            const oCred = await readPassword(process.env.JIRA_CREDENTIAL_NAME || 'jira');
+            if (oCred?.value) {
+                sToken = oCred.value;
+                sEmail = oCred.username || sEmail;
+            }
+        } catch (err) {
+            console.error('[CredStore] Jira credential unavailable, falling back to env:', err.message);
+        }
+    }
+    return { url: sJiraUrl, email: sEmail, token: sToken, project: sProject };
+}
 
 module.exports = class SecurityHandler extends cds.ApplicationService {
 
@@ -254,10 +286,7 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
             );
             if (!oViol) return req.error(404, 'Violation not found');
 
-            const sJiraUrl = (process.env.JIRA_URL || '').replace(/\/$/, '');
-            const sEmail   = process.env.JIRA_EMAIL || '';
-            const sToken   = process.env.JIRA_TOKEN || '';
-            const sProject = process.env.JIRA_PROJECT || 'KAN';
+            const { url: sJiraUrl, email: sEmail, token: sToken, project: sProject } = await getJiraConfig();
             if (!sJiraUrl || !sToken) return req.error(500, 'Jira not configured');
 
             const sAuth = Buffer.from(sEmail + ':' + sToken).toString('base64');
@@ -357,10 +386,7 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
             );
             if (!oNote) return req.error(404, 'Note not found');
 
-            const sJiraUrl = (process.env.JIRA_URL || '').replace(/\/$/, '');
-            const sEmail   = process.env.JIRA_EMAIL || '';
-            const sToken   = process.env.JIRA_TOKEN || '';
-            const sProject = process.env.JIRA_PROJECT || 'KAN';
+            const { url: sJiraUrl, email: sEmail, token: sToken, project: sProject } = await getJiraConfig();
             if (!sJiraUrl || !sToken) return req.error(500, 'Jira not configured');
 
             const sAuth = Buffer.from(sEmail + ':' + sToken).toString('base64');
@@ -441,10 +467,7 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
             );
             if (!oNote) return req.error(404, 'Note not found');
 
-            const sJiraUrl = (process.env.JIRA_URL || '').replace(/\/$/, '');
-            const sEmail   = process.env.JIRA_EMAIL || '';
-            const sToken   = process.env.JIRA_TOKEN || '';
-            const sProject = process.env.JIRA_PROJECT || 'KAN';
+            const { url: sJiraUrl, email: sEmail, token: sToken, project: sProject } = await getJiraConfig();
             if (!sJiraUrl || !sToken) return req.error(500, 'Jira not configured');
 
             const sAuth = Buffer.from(sEmail + ':' + sToken).toString('base64');
@@ -780,10 +803,7 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
             );
             if (!oRole) return req.error(404, 'Critical role assignment not found');
 
-            const sJiraUrl = (process.env.JIRA_URL || '').replace(/\/$/, '');
-            const sEmail   = process.env.JIRA_EMAIL || '';
-            const sToken   = process.env.JIRA_TOKEN || '';
-            const sProject = process.env.JIRA_PROJECT || 'KAN';
+            const { url: sJiraUrl, email: sEmail, token: sToken, project: sProject } = await getJiraConfig();
             if (!sJiraUrl || !sToken) return req.error(500, 'Jira not configured');
 
             const sAuth = Buffer.from(sEmail + ':' + sToken).toString('base64');
