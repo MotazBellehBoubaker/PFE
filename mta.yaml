@@ -29,7 +29,6 @@ modules:
       - name: sentinelgrc-destination
       - name: sentinelgrc-connectivity
       - name: sentinelgrc-logging
-      - name: sentinelgrc-credstore
 
   # ── HANA DB Deployer ─────────────────────────────────────────────
   - name: SentinelGRC-db-deployer
@@ -85,14 +84,11 @@ resources:
   - name: sentinelgrc-logging
     type: org.cloudfoundry.existing-service
 
-  # ── Credential Store (third-party secrets, e.g. the Jira API token) ──
-  # Authentication must be "basic": the plan default is "mtls", whose binding
-  # carries certificate/key instead of the username/password the client uses.
-  - name: sentinelgrc-credstore
-    type: org.cloudfoundry.managed-service
-    parameters:
-      service: credstore
-      service-plan: free
-      config:
-        authentication:
-          type: basic
+  # ── Credential Store — REMOVED 2026-08-10 ────────────────────────
+  # The free plan allows one instance per subaccount and dev/QAS/PROD share
+  # one, so the service could never be created in QAS or PROD and every
+  # transport failed. The Jira token comes from JIRA_TOKEN / JIRA_EMAIL in
+  # the app environment instead. srv/lib/credential-store.js is still in the
+  # tree and getJiraConfig() still prefers the service when one is bound, so
+  # re-enabling later means restoring this resource and the requires entry
+  # on SentinelGRC-srv — nothing else.
