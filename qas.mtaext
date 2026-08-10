@@ -25,3 +25,15 @@ resources:
             description: SentinelGRC Full Administrator (QAS)
             role-template-references:
               - $XSAPPNAME.Admin
+
+  # ── Credential Store ─────────────────────────────────────────────
+  # The "free" plan allows only 1 instance per subaccount, and the dev
+  # space already holds it. dev/QAS/PROD share one subaccount, so QAS
+  # cannot create its own. The "proxy" plan points at the dev instance
+  # and inherits its quota instead of consuming a new one.
+  - name: sentinelgrc-credstore
+    parameters:
+      service-plan: proxy
+      config:
+        origin:
+          serviceGuid: c17f47a4-ab67-4f5a-a01c-b872a41baa31
