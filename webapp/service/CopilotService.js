@@ -159,37 +159,6 @@ sap.ui.define([], function () {
             });
         },
 
-        generateTriage: function () {
-            return delay(1800).then(function () {
-                var h = ctx().highCount;
-                var m = ctx().mediumCount;
-                var l = ctx().lowCount;
-                return [
-                    {
-                        title: "Financial Fraud Risk",
-                        count: h,
-                        priority: "High",
-                        rootCause: "Procure-to-pay and vendor payment roles combined on same users — direct SoD conflict in MM/FI modules",
-                        action: "Remove payment approval roles from users holding vendor creation access. Implement dual-control workflow for all payments."
-                    },
-                    {
-                        title: "Privilege Escalation",
-                        count: m,
-                        priority: "High",
-                        rootCause: "User administration roles combined with role assignment capabilities allow self-privilege escalation",
-                        action: "Revoke role assignment transactions (SU01, PFCG) from users holding user creation rights."
-                    },
-                    {
-                        title: "Audit & Reporting Integrity",
-                        count: l,
-                        priority: "Medium",
-                        rootCause: "Journal entry posting combined with financial reporting access creates risk of data manipulation before audit",
-                        action: "Implement display-only access for FI reporting roles. Require second approval for journal entries."
-                    }
-                ];
-            });
-        },
-
         generateRemediation: function (oViolation) {
             return delay(1500).then(function () {
                 return "**Remediation Playbook — " + (oViolation.userName || oViolation.userId) + "**\n\n" +

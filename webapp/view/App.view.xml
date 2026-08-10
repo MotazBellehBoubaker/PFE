@@ -13,7 +13,7 @@
             <tnt:ToolHeader>
                 <Button icon="sap-icon://menu2" type="Transparent" press=".onSideNavToggle" tooltip="Toggle Navigation"/>
                 <core:Icon src="sap-icon://shield" size="1.4rem" color="Contrast" class="sapUiSmallMarginBegin"/>
-                <Title text="SentinelGRC Test " level="H4" class="sapUiSmallMarginBegin"/>
+                <Title text="SentinelGRC" level="H4" class="sapUiSmallMarginBegin"/>
                 <Text text=" · SAP GRC Security Platform" wrapping="false"/>
                 <ToolbarSpacer/>
 

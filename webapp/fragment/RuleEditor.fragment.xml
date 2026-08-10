@@ -5,16 +5,19 @@
     <Dialog
         id="ruleEditorDialog"
         title="{= ${editor>/isNew} ? 'New SoD Rule' : 'Edit Rule · ' + ${editor>/rule/ruleCode} }"
-        contentWidth="500px">
+        contentWidth="640px"
+        horizontalScrolling="false"
+        initialFocus="ruleCodeInput">
         <content>
             <f:SimpleForm
                 layout="ResponsiveGridLayout"
                 columnsL="1"
                 columnsM="1"
-                class="sapUiSmallMargin">
+                breakpointM="400"
+                labelSpanM="4">
                 <f:content>
                     <Label text="Rule Code" required="true"/>
-                    <Input value="{editor>/rule/ruleCode}" placeholder="e.g. SOD-011" enabled="{editor>/isNew}"/>
+                    <Input id="ruleCodeInput" value="{editor>/rule/ruleCode}" placeholder="e.g. SOD-011" enabled="{editor>/isNew}"/>
                     <Label text="Role A (conflicting)" required="true"/>
                     <Input value="{editor>/rule/roleA}" placeholder="e.g. Z_VEND_CREATE"/>
                     <Label text="Role B (conflicting)" required="true"/>

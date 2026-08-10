@@ -518,7 +518,7 @@ async function buildSodRulesReport(db) {
     wb.created = new Date();
 
     const ws = wb.addWorksheet('SoD Rule Matrix', { views: [{ state: 'frozen', ySplit: 3, showGridLines: false }] });
-    ws.columns = [{ width: 10 }, { width: 26 }, { width: 26 }, { width: 10 }, { width: 16 }, { width: 46 }, { width: 9 }];
+    ws.columns = [{ width: 10 }, { width: 26 }, { width: 26 }, { width: 10 }, { width: 16 }, { width: 78 }, { width: 9 }];
     pageHeader(ws, 'SoD Rule Matrix', aRules.length + ' rules defined  ·  ' + aRules.filter(r => r.active).length + ' active', 7);
     const h = ws.getRow(4);
     h.values = ['Code', 'Role A', 'Role B', 'Severity', 'Category', 'Business Risk', 'Active'];
@@ -534,6 +534,9 @@ async function buildSodRulesReport(db) {
         }
         row.getCell(7).font = { name: FONT, bold: true, color: { argb: r.active ? C.compliant : C.unknown } };
         row.getCell(7).alignment = { horizontal: 'center' };
+        // Risk descriptions run to a few hundred characters — wrap instead of clipping at the column edge
+        row.getCell(6).alignment = { vertical: 'top', wrapText: true };
+        row.height = 62;
     });
     ws.autoFilter = { from: 'A4', to: 'G4' };
 
