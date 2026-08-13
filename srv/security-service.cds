@@ -40,6 +40,36 @@ service SecurityService @(path: '/security-service') {
     action openNoteTicket(noteId: String) returns { ticketKey: String; ticketUrl: String; };
     action resolveViolation(violationId: UUID) returns Boolean;
 
+    // Risk Co-pilot. `history` is a JSON array of { role, content } for the
+    // prior turns; `source` tells the UI whether the answer came from SAP AI
+    // Core ('ai') or from its own built-in responses ('fallback').
+    action copilotChat(message: String, history: LargeString) returns {
+        reply  : LargeString;
+        source : String;
+    };
+
+    // The rest of the AI surface. Each one grounds the model in the latest scan
+    // the same way the co-pilot does, and each returns the same `source` flag so
+    // the UI can drop back to its built-in text when AI Core is unavailable.
+    action generateBriefing() returns {
+        text   : LargeString;
+        source : String;
+    };
+    action generateRemediation(violationId: UUID) returns {
+        text   : LargeString;
+        source : String;
+    };
+    action generateRuleDescription(roleA: String, roleB: String, riskLevel: String) returns {
+        text   : LargeString;
+        source : String;
+    };
+    // `clusters` is a JSON array of { title, rootCause, action, priority, count }
+    // — LargeString rather than a typed array because the shape is model output.
+    action generateTriage() returns {
+        clusters : LargeString;
+        source   : String;
+    };
+
     action saveRemediationTask(
         violationId   : String,
         userId        : String,

@@ -302,6 +302,8 @@ sap.ui.define([
             }
             // Pass real scan data to CopilotService from OData
             var oModel = this.getModel('sentinelgrc');
+            // The same model is how the copilot reaches SAP AI Core.
+            CopilotService.setModel(oModel);
             if (oModel) {
                 oModel.bindList('/ScanResults', null, null, null, {
                     $orderby: 'startedAt desc'

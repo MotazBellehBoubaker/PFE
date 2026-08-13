@@ -7,13 +7,13 @@
         "label": "hana",
         "plan": "hdi-shared",
         "credentials": {
-          "host":     "1f922522-a3bf-4d14-9677-982a340b61b7.hna1.prod-eu20.hanacloud.ondemand.com",
-          "port":     "443",
-          "driver":   "com.sap.db.jdbc.Driver",
-          "url":      "jdbc:sap://1f922522-a3bf-4d14-9677-982a340b61b7.hna1.prod-eu20.hanacloud.ondemand.com:443?encrypt=true&validateCertificate=true",
-          "user":     "REPLACE_WITH_SCHEMA_USER",
+          "host": "1f922522-a3bf-4d14-9677-982a340b61b7.hna1.prod-eu20.hanacloud.ondemand.com",
+          "port": "443",
+          "driver": "com.sap.db.jdbc.Driver",
+          "url": "jdbc:sap://1f922522-a3bf-4d14-9677-982a340b61b7.hna1.prod-eu20.hanacloud.ondemand.com:443?encrypt=true&validateCertificate=true",
+          "user": "REPLACE_WITH_SCHEMA_USER",
           "password": "REPLACE_WITH_SCHEMA_PASSWORD",
-          "schema":   "REPLACE_WITH_SCHEMA"
+          "schema": "REPLACE_WITH_SCHEMA"
         }
       }
     ],
@@ -23,14 +23,14 @@
         "label": "xsuaa",
         "plan": "application",
         "credentials": {
-          "xsappname":      "sentinelgrc!t39023",
-          "clientid":       "sb-sentinelgrc!t39023",
-          "clientsecret":   "82c4dfe9-d5ab-4881-be7a-1865be04de40$uGlNkiuQj4O0v5js4spjk0InOi4Du8yG4tBV7jNMVms=",
-          "url":            "https://aymax-consulting-dev-azure-442muemm.authentication.eu20.hana.ondemand.com",
-          "identityzone":   "aymax-consulting-dev-azure-442muemm",
+          "xsappname": "sentinelgrc!t39023",
+          "clientid": "sb-sentinelgrc!t39023",
+          "clientsecret": "82c4dfe9-d5ab-4881-be7a-1865be04de40$uGlNkiuQj4O0v5js4spjk0InOi4Du8yG4tBV7jNMVms=",
+          "url": "https://aymax-consulting-dev-azure-442muemm.authentication.eu20.hana.ondemand.com",
+          "identityzone": "aymax-consulting-dev-azure-442muemm",
           "identityzoneid": "f6e04827-3af9-44de-a4b7-4840b1a1efc2",
-          "tenantid":       "f6e04827-3af9-44de-a4b7-4840b1a1efc2",
-          "uaadomain":      "authentication.eu20.hana.ondemand.com"
+          "tenantid": "f6e04827-3af9-44de-a4b7-4840b1a1efc2",
+          "uaadomain": "authentication.eu20.hana.ondemand.com"
         }
       }
     ],
@@ -40,10 +40,37 @@
         "label": "destination",
         "plan": "lite",
         "credentials": {
-          "clientid":     "REPLACE_WITH_DEST_CLIENTID",
+          "clientid": "REPLACE_WITH_DEST_CLIENTID",
           "clientsecret": "REPLACE_WITH_DEST_SECRET",
-          "uri":          "https://destination-configuration.cfapps.eu20.hana.ondemand.com",
-          "url":          "https://aymax-consulting-dev-azure-442muemm.authentication.eu20.hana.ondemand.com"
+          "uri": "https://destination-configuration.cfapps.eu20.hana.ondemand.com",
+          "url": "https://aymax-consulting-dev-azure-442muemm.authentication.eu20.hana.ondemand.com"
+        }
+      }
+    ],
+    "aicore": [
+      {
+        "name": "sentinelgrc-aicore",
+        "label": "aicore",
+        "plan": "extended",
+        "tags": [
+          "aicore"
+        ],
+        "credentials": {
+          "serviceurls": {
+            "AI_API_URL": "https://api.ai.prod.eu-central-1.aws.ml.hana.ondemand.com"
+          },
+          "appname": "2cba5a44-4781-4a87-ae14-2e571aa7ab41!b490380|aicore!b540",
+          "clientid": "sb-2cba5a44-4781-4a87-ae14-2e571aa7ab41!b490380|aicore!b540",
+          "identityzone": "dgqtvvdjy692mmzm",
+          "identityzoneid": "04db762b-62cf-4d73-a15b-5e01a6fab609",
+          "url": "https://dgqtvvdjy692mmzm.authentication.eu10.hana.ondemand.com",
+          "certurl": "https://dgqtvvdjy692mmzm.authentication.cert.eu10.hana.ondemand.com",
+          "certificate": "-----BEGIN CERTIFICATE-----\nMIIGQzCCBCugAwIBAgIQTEXeczZR+Kwc65EONbfatzANBgkqhkiG9w0BAQsFADB5\nMQswCQYDVQQGEwJERTENMAsGA1UEBwwERVUxMDEPMA0GA1UECgwGU0FQIFNFMSMw\nIQYDVQQLDBpTQVAgQ2xvdWQgUGxhdGZvcm0gQ2xpZW50czElMCMGA1UEAwwcU0FQ\nIENsb3VkIFBsYXRmb3JtIENsaWVudCBDQTAeFw0yNjAyMDEwOTExNTFaFw0yNzAy\nMDExMDExNTFaMIG8MQswCQYDVQQGEwJERTEPMA0GA1UEChMGU0FQIFNFMSMwIQYD\nVQQLExpTQVAgQ2xvdWQgUGxhdGZvcm0gQ2xpZW50czEtMCsGA1UECxMkMWM4MmMx\nNWQtZjAxNi00NDlhLTg0MjMtNTA5ZTRhZjViZWE1MRkwFwYDVQQHExBhYmFwY3At\ncHJvZC1ldTIwMS0wKwYDVQQDEyQ4YmJiNDMxZS01ZWNkLTQ1ZTItYjU2ZC1kZmYz\nZGQ1MDk1MDYwggGiMA0GCSqGSIb3DQEBAQUAA4IBjwAwggGKAoIBgQDZ56/EBIPU\nP7XyVjUgjKOivpThnt1fAxobD8pcXc/eoswBX/G+011O/BWxUI+Y0gw81OUB+Sdt\nk9VWztu+KIxrni/4HplH35t9CalpwXVWixRtec3iCq3xxEFJfte9QAT9w8VNKK/C\nIZlg0NfbwmnECYHXeqbNl6mumEnHpjriExWvYPRurgPskEhLsU7cQzcWLW4uMnw6\nZ4JMAN2yzo4P4WYI6TzJUSCoSVeqJKeZLcUFabx7QEB9uLXtBk7Lw7Uo22D7gsQn\nb3s5hLRA378REezpMwoEK+Ap4k21tJJztfSLXSS4wwy1NnlrVqfAI2M2J0EtZa2D\nWcEE1QlvRQrIiMdOv+FClY+XudhLaHFFg7UaWMFHej44k/Mw5h2uP62WuUe9KM4b\nAjrnikQ8bLTeSbZqrN1qsSM5O2o/ZU3jg7SsVMtaUKEqJoznQgyoJubPXgtb4w50\nrS+vxKxOfqmzPzgkZHG6AVoJXJQyBjKExNdh+adtUppqonkN7WqLTz8CAwEAAaOC\nAQEwgf4wCQYDVR0TBAIwADAfBgNVHSMEGDAWgBTtx8AzXhKk93kym3vuCviohXiM\nLzAdBgNVHQ4EFgQU3LKbVmjxAcOAOGrOnfghv8uRDrMwDgYDVR0PAQH/BAQDAgWg\nMBMGA1UdJQQMMAoGCCsGAQUFBwMCMIGLBgNVHR8EgYMwgYAwfqB8oHqGeGh0dHA6\nLy9zYXAtY2xvdWQtcGxhdGZvcm0tY2xpZW50LWNhLWV1MTAtY3Jscy5zMy5ldS1j\nZW50cmFsLTEuYW1hem9uYXdzLmNvbS9jcmwvMmExYjQ5YWMtZmMwMi00YTQ4LTk5\nM2EtOWE0ZDBkZmVjMzNlLmNybDANBgkqhkiG9w0BAQsFAAOCAgEAVVb5wm+fULHi\nEoHAoa3e21xRcWsy6Hz3yQ2V1fu3E0jguHqBoBom6A8rTDINYxWY198ahb69zLIL\nQfLw6qY6UZm0VDq/cGuXPcYq9Q5m8MfaXxk8AiTNdT55KrmNEGZrw8k9wNzxTbPS\nKaPuXZ6SDUogn/WQOKzz7qoixYwxWp9n/WQD4PAzeAzTNhA3FLy+rvdccba3VrLP\nMW+1onvYdwKG4pNWRExvPkrd4D84pcf3YkwLdJUxp0+cQ1VxYf+Q4DHyOyPHd1Gk\n85Aw1osyMi50LILL8rA/zrJbqj3nLk1MKW3HL367GMSTCSHADk2rSLxTJcp8TX/e\ngY32P7bEgTTpyY+t6dzNVCIDcQ6ClsOdlnLHoBZXKzr1j0gCsiWnsAleGkDRBavq\nlkoPcFAiW+aWdfqzlAAs6Let1sMH9+mBiucKGtYF4V/hoXsztiJZe0kGBVvYrxUQ\ndvpHyebyGC5PsBjZA6HkTTklp9NnNj/gG2NHZyvQIfSRSUJdsytCurP4j7S2M9pk\noeBP3nRRQGv8HwAwN9tu4NWvPjPevV4Qnlq9DzZDXW6TyCIPVIElYxgKfxRmKh7Y\npGw37BBElRZ37qZ5U7GC/5CWjTHz5NxwQ1jw4LTQxGSC9xwSPbuuaM49grXT/x1X\n1PXTodPiJrWQ+S9N+nBRiDxyuN4UGB8=\n-----END CERTIFICATE-----\n",
+          "key": "",
+          "credential-type": "x509",
+          "token-type": [
+            "xsuaa"
+          ]
         }
       }
     ]

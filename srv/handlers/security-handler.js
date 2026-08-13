@@ -21,6 +21,13 @@ const {
 const { SECURITY_NOTES } = require('./security-notes-catalog');
 const { buildReport, buildComplianceReport, buildViolationsReport, buildUsersReport, buildCriticalRolesReport, buildSodRulesReport } = require('./report-generator');
 const { readPassword, isConfigured: isCredStoreBound } = require('../lib/credential-store');
+const {
+    buildReply:            copilotReply,
+    buildBriefing:         copilotBriefing,
+    buildRemediation:      copilotRemediation,
+    buildRuleDescription:  copilotRuleDescription,
+    buildTriage:           copilotTriage
+} = require('./copilot');
 
 /**
  * Jira connection details.
@@ -51,6 +58,121 @@ async function getJiraConfig() {
         }
     }
     return { url: sJiraUrl, email: sEmail, token: sToken, project: sProject };
+}
+
+// Fields Jira may legitimately refuse: team-managed projects often don't put
+// `priority` or `duedate` on the create screen. They are nice-to-have, so a
+// rejection naming one of them is worth retrying without it rather than
+// failing the whole ticket.
+const OPTIONAL_JIRA_FIELDS = ['priority', 'duedate', 'labels'];
+
+function jiraRequest(sUrl, sAuth, oBody) {
+    const https = require('https');
+    const oUrl = new URL(sUrl);
+    return new Promise((resolve, reject) => {
+        const r = https.request({
+            hostname: oUrl.hostname,
+            path:     oUrl.pathname,
+            method:   'POST',
+            headers: {
+                'Authorization': 'Basic ' + sAuth,
+                'Content-Type':  'application/json',
+                'Accept':        'application/json'
+            }
+        }, res => {
+            let d = '';
+            res.on('data', c => d += c);
+            res.on('end', () => resolve({ status: res.statusCode, body: d }));
+        });
+        r.on('error', reject);
+        r.setTimeout(30000, () => r.destroy(new Error('Jira timed out after 30s')));
+        r.write(JSON.stringify(oBody));
+        r.end();
+    });
+}
+
+/**
+ * Create one Jira issue and return the parsed response.
+ *
+ * `oFields` is the `fields` object; the project key is filled in here so no
+ * caller has to. Throws an Error carrying `jiraStatus` and a message that is
+ * safe and useful to show the user — see toJiraError() for why that matters.
+ */
+async function createJiraIssue(oFields) {
+    const { url: sJiraUrl, email: sEmail, token: sToken, project: sProject } = await getJiraConfig();
+
+    if (!sJiraUrl || !sToken) {
+        const e = new Error(
+            'Jira is not configured. Set JIRA_URL and a Jira API token (JIRA_TOKEN, ' +
+            'or a Credential Store entry) on the SentinelGRC-srv app.'
+        );
+        e.jiraStatus = 0;
+        throw e;
+    }
+
+    const sAuth = Buffer.from(sEmail + ':' + sToken).toString('base64');
+    const sUrl  = sJiraUrl + '/rest/api/3/issue';
+    let oBody   = { fields: Object.assign({ project: { key: sProject } }, oFields) };
+
+    let oRes = await jiraRequest(sUrl, sAuth, oBody);
+
+    // Retry once without whichever optional fields Jira objected to.
+    if (oRes.status === 400) {
+        let aBad = [];
+        try {
+            aBad = Object.keys(JSON.parse(oRes.body).errors || {})
+                .filter((s) => OPTIONAL_JIRA_FIELDS.includes(s));
+        } catch { /* body was not JSON — fall through to the error below */ }
+
+        if (aBad.length) {
+            console.warn('[Jira] retrying without unsupported field(s):', aBad.join(', '));
+            aBad.forEach((s) => { delete oBody.fields[s]; });
+            oRes = await jiraRequest(sUrl, sAuth, oBody);
+        }
+    }
+
+    if (oRes.status < 200 || oRes.status >= 300) {
+        // Jira answers an unauthenticated create with a *project* error rather
+        // than a 401, so a bad token reads as "the project doesn't exist".
+        // Say so, otherwise this costs an afternoon to work out.
+        let sDetail = oRes.body.slice(0, 300);
+        try {
+            const oErr = JSON.parse(oRes.body);
+            sDetail = (oErr.errorMessages || []).concat(
+                Object.entries(oErr.errors || {}).map(([k, v]) => `${k}: ${v}`)
+            ).join('; ') || sDetail;
+        } catch { /* keep the raw body */ }
+
+        let sHint = '';
+        if (oRes.status === 401 || oRes.status === 403) {
+            sHint = ' — the Jira credentials were rejected. Check the API token.';
+        } else if (/project/i.test(sDetail)) {
+            sHint = ` — check that project "${sProject}" exists and that the API token is valid ` +
+                    '(Jira reports an invalid token as a project permission error).';
+        }
+
+        const e = new Error(`Jira returned ${oRes.status}: ${sDetail}${sHint}`);
+        e.jiraStatus = oRes.status;
+        throw e;
+    }
+
+    // `browseUrl` saves every caller from rebuilding it out of the base URL.
+    const oIssue = JSON.parse(oRes.body);
+    oIssue.browseUrl = sJiraUrl + '/browse/' + oIssue.key;
+    return oIssue;
+}
+
+/**
+ * Turn a Jira failure into a client error the UI can display.
+ *
+ * CAP strips the message from 5xx responses in production, which is why every
+ * one of these used to surface as a bare "500 Internal Server Error" with the
+ * cause visible only in the CF log. 424 is a client-visible code, so the real
+ * reason reaches the user.
+ */
+function toJiraError(req, err) {
+    console.error('[Jira] ticket creation failed:', err.message);
+    return req.reject(424, err.message);
 }
 
 module.exports = class SecurityHandler extends cds.ApplicationService {
@@ -286,19 +408,13 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
             );
             if (!oViol) return req.error(404, 'Violation not found');
 
-            const { url: sJiraUrl, email: sEmail, token: sToken, project: sProject } = await getJiraConfig();
-            if (!sJiraUrl || !sToken) return req.error(500, 'Jira not configured');
-
-            const sAuth = Buffer.from(sEmail + ':' + sToken).toString('base64');
             // Severity → Jira priority + SLA due date
             const oPrioMap = { High: 'High', Medium: 'Medium', Low: 'Low' };
             const oSlaDays = { High: 2, Medium: 7, Low: 30 };
             const dDue = new Date();
             dDue.setDate(dDue.getDate() + (oSlaDays[oViol.severity] || 14));
             const sDueDate = dDue.toISOString().substring(0, 10);
-            const oBody = {
-                fields: {
-                    project:   { key: sProject },
+            const oFields = {
                     issuetype: { name: 'Task' },
                     priority:  { name: oPrioMap[oViol.severity] || 'Medium' },
                     duedate:   sDueDate,
@@ -318,37 +434,16 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
                                 text: 'Severity: ' + oViol.severity }] },
                             { type: 'paragraph', content: [{ type: 'text',
                                 text: 'Action required: remove one of the conflicting roles via SU01 and confirm with SU53.' }] }
-                        ]
-                    }
+                    ]
                 }
             };
 
-            const https2 = require('https');
-            const oUrl = new URL(sJiraUrl + '/rest/api/3/issue');
-            const sResp = await new Promise((resolve, reject) => {
-                const r = https2.request({
-                    hostname: oUrl.hostname,
-                    path:     oUrl.pathname,
-                    method:   'POST',
-                    headers: {
-                        'Authorization': 'Basic ' + sAuth,
-                        'Content-Type':  'application/json',
-                        'Accept':        'application/json'
-                    }
-                }, res => {
-                    let d = '';
-                    res.on('data', c => d += c);
-                    res.on('end', () => {
-                        if (res.statusCode >= 200 && res.statusCode < 300) resolve(d);
-                        else reject(new Error('Jira ' + res.statusCode + ': ' + d.slice(0, 300)));
-                    });
-                });
-                r.on('error', reject);
-                r.setTimeout(30000, () => r.destroy(new Error('Jira timeout')));
-                r.write(JSON.stringify(oBody));
-                r.end();
-            });
-            const oResp = JSON.parse(sResp);
+            let oResp;
+            try {
+                oResp = await createJiraIssue(oFields);
+            } catch (e) {
+                return toJiraError(req, e);
+            }
             console.log('[Jira] Created ticket', oResp.key);
 
             // Audit log (status update wrapped so enum mismatch never breaks ticket creation)
@@ -363,7 +458,7 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
 
             return {
                 ticketKey: oResp.key,
-                ticketUrl: sJiraUrl + '/browse/' + oResp.key
+                ticketUrl: oResp.browseUrl
             };
         });
 
@@ -386,66 +481,42 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
             );
             if (!oNote) return req.error(404, 'Note not found');
 
-            const { url: sJiraUrl, email: sEmail, token: sToken, project: sProject } = await getJiraConfig();
-            if (!sJiraUrl || !sToken) return req.error(500, 'Jira not configured');
-
-            const sAuth = Buffer.from(sEmail + ':' + sToken).toString('base64');
+            const oPrioMap = { High: 'High', Medium: 'Medium', Low: 'Low' };
             const oSla = { High: 2, Medium: 14, Low: 30 };
             const dDue = new Date();
             dDue.setDate(dDue.getDate() + (oSla[oNote.priority] || 14));
 
-            const oBody = {
-                fields: {
-                    project:   { key: sProject },
-                    issuetype: { name: 'Task' },
-                    priority:  { name: oNote.priority || 'Medium' },
-                    duedate:   dDue.toISOString().substring(0, 10),
-                    labels:    ['sentinelgrc', 'security-note', (oNote.category || '').toLowerCase().replace(/\s+/g,'-')],
-                    summary:   '[SentinelGRC] Apply SAP Note ' + oNote.noteId + ' — ' + (oNote.component || ''),
-                    description: {
-                        type: 'doc', version: 1,
-                        content: [
-                            { type: 'paragraph', content: [{ type: 'text',
-                                text: 'Missing SAP Security Note detected by SentinelGRC.' }] },
-                            { type: 'paragraph', content: [{ type: 'text',
-                                text: 'Note: ' + oNote.noteId + ' (' + (oNote.category || '') + ', priority ' + oNote.priority + ')' }] },
-                            { type: 'paragraph', content: [{ type: 'text',
-                                text: 'Component: ' + (oNote.component || '') }] },
-                            { type: 'paragraph', content: [{ type: 'text',
-                                text: (oNote.description || '') }] },
-                            { type: 'paragraph', content: [{ type: 'text',
-                                text: 'Reference: https://me.sap.com/notes/' + oNote.noteId }] }
-                        ]
-                    }
+            const oFields = {
+                issuetype: { name: 'Task' },
+                priority:  { name: oPrioMap[oNote.priority] || 'Medium' },
+                duedate:   dDue.toISOString().substring(0, 10),
+                labels:    ['sentinelgrc', 'security-note', (oNote.category || '').toLowerCase().replace(/\s+/g,'-')],
+                summary:   '[SentinelGRC] Apply SAP Note ' + oNote.noteId + ' — ' + (oNote.component || ''),
+                description: {
+                    type: 'doc', version: 1,
+                    content: [
+                        { type: 'paragraph', content: [{ type: 'text',
+                            text: 'Missing SAP Security Note detected by SentinelGRC.' }] },
+                        { type: 'paragraph', content: [{ type: 'text',
+                            text: 'Note: ' + oNote.noteId + ' (' + (oNote.category || '') + ', priority ' + oNote.priority + ')' }] },
+                        { type: 'paragraph', content: [{ type: 'text',
+                            text: 'Component: ' + (oNote.component || '') }] },
+                        { type: 'paragraph', content: [{ type: 'text',
+                            text: (oNote.description || '') }] },
+                        { type: 'paragraph', content: [{ type: 'text',
+                            text: 'Reference: https://me.sap.com/notes/' + oNote.noteId }] }
+                    ]
                 }
             };
 
-            const https3 = require('https');
-            const oUrl = new URL(sJiraUrl + '/rest/api/3/issue');
-            const sResp = await new Promise((resolve, reject) => {
-                const r = https3.request({
-                    hostname: oUrl.hostname, path: oUrl.pathname, method: 'POST',
-                    headers: {
-                        'Authorization': 'Basic ' + sAuth,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    }
-                }, res => {
-                    let d = '';
-                    res.on('data', c => d += c);
-                    res.on('end', () => {
-                        if (res.statusCode >= 200 && res.statusCode < 300) resolve(d);
-                        else reject(new Error('Jira ' + res.statusCode + ': ' + d.slice(0, 300)));
-                    });
-                });
-                r.on('error', reject);
-                r.setTimeout(30000, () => r.destroy(new Error('Jira timeout')));
-                r.write(JSON.stringify(oBody));
-                r.end();
-            });
-            const oResp = JSON.parse(sResp);
+            let oResp;
+            try {
+                oResp = await createJiraIssue(oFields);
+            } catch (e) {
+                return toJiraError(req, e);
+            }
             console.log('[Jira] Created note ticket', oResp.key);
-            return { ticketKey: oResp.key, ticketUrl: sJiraUrl + '/browse/' + oResp.key };
+            return { ticketKey: oResp.key, ticketUrl: oResp.browseUrl };
         });
 
         // ── applyNote (mark security note as applied) ────────────────────
@@ -459,75 +530,6 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
             return true;
         });
 
-        // ── openNoteTicket (Jira ticket for a security note) ─────────────
-        this.on('openNoteTicket', async (req) => {
-            const { noteId } = req.data;
-            const oNote = await db.run(
-                SELECT.one.from('sentinel.db.SecurityNote').where({ noteId: noteId })
-            );
-            if (!oNote) return req.error(404, 'Note not found');
-
-            const { url: sJiraUrl, email: sEmail, token: sToken, project: sProject } = await getJiraConfig();
-            if (!sJiraUrl || !sToken) return req.error(500, 'Jira not configured');
-
-            const sAuth = Buffer.from(sEmail + ':' + sToken).toString('base64');
-            const oSla = { High: 2, Medium: 14, Low: 30 };
-            const dDue = new Date();
-            dDue.setDate(dDue.getDate() + (oSla[oNote.priority] || 14));
-
-            const oBody = {
-                fields: {
-                    project:   { key: sProject },
-                    issuetype: { name: 'Task' },
-                    priority:  { name: oNote.priority || 'Medium' },
-                    duedate:   dDue.toISOString().substring(0, 10),
-                    labels:    ['sentinelgrc', 'security-note', (oNote.category || '').toLowerCase().replace(/\s+/g,'-')],
-                    summary:   '[SentinelGRC] Apply SAP Note ' + oNote.noteId + ' — ' + (oNote.component || ''),
-                    description: {
-                        type: 'doc', version: 1,
-                        content: [
-                            { type: 'paragraph', content: [{ type: 'text',
-                                text: 'Missing SAP Security Note detected by SentinelGRC.' }] },
-                            { type: 'paragraph', content: [{ type: 'text',
-                                text: 'Note: ' + oNote.noteId + ' (' + (oNote.category || '') + ', priority ' + oNote.priority + ')' }] },
-                            { type: 'paragraph', content: [{ type: 'text',
-                                text: 'Component: ' + (oNote.component || '') }] },
-                            { type: 'paragraph', content: [{ type: 'text',
-                                text: (oNote.description || '') }] },
-                            { type: 'paragraph', content: [{ type: 'text',
-                                text: 'Reference: https://me.sap.com/notes/' + oNote.noteId }] }
-                        ]
-                    }
-                }
-            };
-
-            const https3 = require('https');
-            const oUrl = new URL(sJiraUrl + '/rest/api/3/issue');
-            const sResp = await new Promise((resolve, reject) => {
-                const r = https3.request({
-                    hostname: oUrl.hostname, path: oUrl.pathname, method: 'POST',
-                    headers: {
-                        'Authorization': 'Basic ' + sAuth,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    }
-                }, res => {
-                    let d = '';
-                    res.on('data', c => d += c);
-                    res.on('end', () => {
-                        if (res.statusCode >= 200 && res.statusCode < 300) resolve(d);
-                        else reject(new Error('Jira ' + res.statusCode + ': ' + d.slice(0, 300)));
-                    });
-                });
-                r.on('error', reject);
-                r.setTimeout(30000, () => r.destroy(new Error('Jira timeout')));
-                r.write(JSON.stringify(oBody));
-                r.end();
-            });
-            const oResp = JSON.parse(sResp);
-            console.log('[Jira] Created note ticket', oResp.key);
-            return { ticketKey: oResp.key, ticketUrl: sJiraUrl + '/browse/' + oResp.key };
-        });
 
         // ── generateReport (full Excel workbook) ──────────────────────────
         this.on('generateReport', async (req) => {
@@ -803,20 +805,17 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
             );
             if (!oRole) return req.error(404, 'Critical role assignment not found');
 
-            const { url: sJiraUrl, email: sEmail, token: sToken, project: sProject } = await getJiraConfig();
-            if (!sJiraUrl || !sToken) return req.error(500, 'Jira not configured');
-
-            const sAuth = Buffer.from(sEmail + ':' + sToken).toString('base64');
             // Severity → SLA due date (critical roles get a tighter SLA than regular violations)
+            const oPrioMap = { High: 'High', Medium: 'Medium', Low: 'Low' };
             const oSlaDays = { High: 1, Medium: 5, Low: 14 };
             const dDue = new Date();
             dDue.setDate(dDue.getDate() + (oSlaDays[oRole.severity] || 5));
             const sDueDate = dDue.toISOString().substring(0, 10);
-            const oBody = {
-                fields: {
-                    project:   { key: sProject },
+            const oFields = {
                     issuetype: { name: 'Task' },
-                    priority:  { name: oRole.severity || 'High' },
+                    // Mapped rather than passed through: a severity value with no
+                    // matching Jira priority makes the whole create fail.
+                    priority:  { name: oPrioMap[oRole.severity] || 'High' },
                     duedate:   sDueDate,
                     labels:    ['sentinelgrc', 'critical-role', (oRole.criticalType || 'unknown').toLowerCase()],
                     summary:   '[SentinelGRC] ' + (oRole.criticalType || 'Critical') + ' role assignment: ' +
@@ -836,37 +835,16 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
                                 text: 'Severity: ' + oRole.severity }] },
                             { type: 'paragraph', content: [{ type: 'text',
                                 text: 'Action required: remove the profile/role via SU01 and confirm with SU53.' }] }
-                        ]
-                    }
+                    ]
                 }
             };
 
-            const https6 = require('https');
-            const oUrl = new URL(sJiraUrl + '/rest/api/3/issue');
-            const sResp = await new Promise((resolve, reject) => {
-                const r = https6.request({
-                    hostname: oUrl.hostname,
-                    path:     oUrl.pathname,
-                    method:   'POST',
-                    headers: {
-                        'Authorization': 'Basic ' + sAuth,
-                        'Content-Type':  'application/json',
-                        'Accept':        'application/json'
-                    }
-                }, res => {
-                    let d = '';
-                    res.on('data', c => d += c);
-                    res.on('end', () => {
-                        if (res.statusCode >= 200 && res.statusCode < 300) resolve(d);
-                        else reject(new Error('Jira ' + res.statusCode + ': ' + d.slice(0, 300)));
-                    });
-                });
-                r.on('error', reject);
-                r.setTimeout(30000, () => r.destroy(new Error('Jira timeout')));
-                r.write(JSON.stringify(oBody));
-                r.end();
-            });
-            const oResp = JSON.parse(sResp);
+            let oResp;
+            try {
+                oResp = await createJiraIssue(oFields);
+            } catch (e) {
+                return toJiraError(req, e);
+            }
             console.log('[Jira] Created critical role ticket', oResp.key);
 
             try {
@@ -880,7 +858,7 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
 
             return {
                 ticketKey: oResp.key,
-                ticketUrl: sJiraUrl + '/browse/' + oResp.key
+                ticketUrl: oResp.browseUrl
             };
         });
 
@@ -894,6 +872,44 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
             );
             return true;
         });
+
+        // ── copilotChat ──────────────────────────────────────────────────
+        // A failure here must not break the chat: the UI answers from its
+        // built-in responses whenever `source` comes back as 'fallback'.
+        this.on('copilotChat', async (req) => {
+            try {
+                const sReply = await copilotReply(req.data.message, req.data.history);
+                if (sReply) return { reply: sReply, source: 'ai' };
+            } catch (e) {
+                console.error('[copilotChat] AI Core call failed:', e.message);
+            }
+            return { reply: null, source: 'fallback' };
+        });
+
+        // ── AI generators ────────────────────────────────────────────────
+        // Same contract as copilotChat: never fail the request, just report
+        // 'fallback' and let the UI use its built-in text.
+        const aiAction = (sName, fnBuild, sField) => this.on(sName, async (req) => {
+            try {
+                const vResult = await fnBuild(req.data);
+                if (vResult) return { [sField]: vResult, source: 'ai' };
+            } catch (e) {
+                console.error(`[${sName}] AI Core call failed:`, e.message);
+            }
+            return { [sField]: null, source: 'fallback' };
+        });
+
+        aiAction('generateBriefing', () => copilotBriefing(), 'text');
+        aiAction('generateRemediation', (d) => copilotRemediation(d.violationId), 'text');
+        aiAction('generateRuleDescription',
+            (d) => copilotRuleDescription(d.roleA, d.roleB, d.riskLevel), 'text');
+        aiAction('generateTriage',
+            async () => {
+                const aClusters = await copilotTriage();
+                // The action returns a string; an empty cluster list is not an
+                // answer, so treat it as a fallback rather than shipping '[]'.
+                return aClusters && aClusters.length ? JSON.stringify(aClusters) : null;
+            }, 'clusters');
 
         // ── saveRemediationTask ──────────────────────────────────────────
         this.on('saveRemediationTask', async (req) => {

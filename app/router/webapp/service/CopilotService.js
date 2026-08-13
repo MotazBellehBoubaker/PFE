@@ -14,11 +14,59 @@ sap.ui.define([], function () {
         lastScanAt: null
     };
 
+    // OData v4 model, handed over by App.controller when the panel opens. The
+    // AI calls go through the backend rather than fetch() so the model's CSRF
+    // token handling applies.
+    var _oModel = null;
+
     function delay(ms) {
         return new Promise(function(resolve) { setTimeout(resolve, ms); });
     }
 
+    /**
+     * Call one of the backend's AI actions and return the generated field.
+     *
+     * Resolves to null — never rejects — when AI Core is unconfigured or the
+     * call fails, so every caller can fall back to its built-in text instead
+     * of showing an error. `sField` is the property the action returns the
+     * generated content in ("reply", "text" or "clusters").
+     */
+    function askAiCore(sAction, oParams, sField) {
+        if (!_oModel) return Promise.resolve(null);
+
+        var oAction;
+        try {
+            oAction = _oModel.bindContext("/" + sAction + "(...)");
+        } catch (e) {
+            return Promise.resolve(null);
+        }
+
+        Object.keys(oParams || {}).forEach(function (sKey) {
+            oAction.setParameter(sKey, oParams[sKey]);
+        });
+
+        return oAction.execute()
+            .then(function () {
+                var oResult = oAction.getBoundContext().getObject();
+                if (oResult && oResult.source === "ai" && oResult[sField]) {
+                    return oResult[sField];
+                }
+                return null;
+            })
+            .catch(function (err) {
+                // eslint-disable-next-line no-console
+                console.warn("[Copilot] " + sAction + " unavailable, using built-in text:",
+                    (err && err.message) || err);
+                return null;
+            });
+    }
+
     function ctx() { return _oContext; }
+
+    // ── Built-in responses ───────────────────────────────────────────────
+    // Everything below is what the UI shows when AI Core is unconfigured or a
+    // call fails. It is written from the same scan context the model would
+    // have been given, so a fallback answer still describes this tenant.
 
     function buildResponse(sMsg) {
         var s = sMsg.toLowerCase();
@@ -124,99 +172,151 @@ sap.ui.define([], function () {
             "What would you like to explore?";
     }
 
+    function buildBriefing() {
+        var v = ctx().violations;
+        var r = ctx().riskScore;
+        var c = ctx().complianceScore;
+        var u = ctx().usersScanned;
+        var h = ctx().highCount;
+        var scan = ctx().scanCode;
+        var date = ctx().lastScanAt ? ctx().lastScanAt.substring(0, 10) : new Date().toISOString().substring(0, 10);
+
+        return "**Executive Security Briefing — SentinelGRC · RD1**\n\n" +
+            "The latest security scan (**" + scan + "**) completed on " + date + " identified **" + v + " active SoD violations** across **" + u + " SAP users**, yielding a risk score of **" + r + "/100** and compliance score of **" + c + "%**. " +
+            (h > 0 ? "The most critical finding involves **" + h + " high-severity violations** where users hold conflicting roles in financial approval workflows, creating direct fraud exposure in the procure-to-pay cycle." : "No high-severity violations were detected in this scan.") + "\n\n" +
+            "**Top 3 Priority Actions:**\n" +
+            "1. " + (h > 0 ? "Immediately revoke conflicting financial roles from the **" + h + " high-severity violation users** — specifically those combining vendor creation with payment approval capabilities." : "Maintain current access controls and schedule quarterly review to sustain compliance posture.") + "\n" +
+            "2. Review and restrict all users identified with **critical role assignments** (SAP_ALL equivalent profiles) — these represent the highest privilege escalation risk in the system.\n" +
+            "3. Schedule emergency access review with business owners for all High-severity violations within **48 hours** and implement compensating controls until roles are remediated.\n\n" +
+            "**Positive Observation:** **" + c + "% compliance score** indicates " + (c >= 90 ? "a strong security posture." : "an acceptable baseline with clear improvement path.") + " The automated detection pipeline successfully identified all violations within seconds of scan initiation, enabling rapid response.";
+    }
+
+    function buildRemediation(oViolation) {
+        return "**Remediation Playbook — " + (oViolation.userName || oViolation.userId) + "**\n\n" +
+            "**Immediate Action:** Place user account under enhanced monitoring and notify the user's manager.\n\n" +
+            "**Step-by-Step SAP Remediation:**\n" +
+            "1. Log into SAP with basis administrator credentials\n" +
+            "2. Execute transaction **SU01** → enter user ID **" + oViolation.userId + "**\n" +
+            "3. Navigate to the **Roles** tab\n" +
+            "4. Remove role **" + oViolation.roleB + "** (the conflicting role)\n" +
+            "5. Save changes and document in the system notes\n" +
+            "6. Execute **SU53** to verify access removal\n\n" +
+            "**Compensating Controls:**\n" +
+            "- Enable enhanced audit logging for user " + oViolation.userId + " in SM19\n" +
+            "- Require dual approval for all transactions involving " + oViolation.roleA + "\n\n" +
+            "**Preventive Measures:**\n" +
+            "- Add this role combination to SentinelGRC SoD rule engine\n" +
+            "- Implement automated quarterly access review for finance roles\n" +
+            "- Enable real-time alerts for this role combination assignment";
+    }
+
+    function buildRuleDescription(oRule) {
+        return "This SoD rule detects a conflict between **" + (oRule.roleA || "Role A") + "** and **" + (oRule.roleB || "Role B") + "**. " +
+            "Combining these roles allows a single user to initiate and approve the same business transaction, " +
+            "bypassing the four-eyes principle and creating a " + (oRule.riskLevel || "High") + " risk of fraud or error. " +
+            "This rule is aligned with SAP GRC best practices and SOX compliance requirements.";
+    }
+
+    /**
+     * Clusters built from the severity counts alone — the only grouping that
+     * can be derived client-side without the violation rows. Empty severities
+     * are dropped so the card never shows a "0 violations" theme.
+     */
+    function buildTriage() {
+        return [
+            {
+                title:     "Procure-to-pay conflicts",
+                rootCause: "Users hold both vendor master maintenance and payment approval, so one person can create a payee and pay it.",
+                action:    "Remove the approval role in SU10 and route approvals through a dedicated release group.",
+                priority:  "High",
+                count:     ctx().highCount
+            },
+            {
+                title:     "Privilege escalation",
+                rootCause: "User administration combined with role assignment lets a user grant themselves any authorisation.",
+                action:    "Split SU01 and PFCG authorisations across two teams, then review the change log in SM19.",
+                priority:  "Medium",
+                count:     ctx().mediumCount
+            },
+            {
+                title:     "Reporting overlaps",
+                rootCause: "Display and reporting roles overlap across modules — low fraud risk but they inflate the violation count.",
+                action:    "Consolidate into a single read-only reporting role during the next PFCG cleanup.",
+                priority:  "Low",
+                count:     ctx().lowCount
+            }
+        ].filter(function (o) { return o.count > 0; });
+    }
+
     return {
 
         setContext: function(oData) {
             _oContext = Object.assign(_oContext, oData);
         },
 
+        /** Give the service the OData model it needs to reach the backend. */
+        setModel: function (oModel) {
+            _oModel = oModel || null;
+        },
+
         SCAN_CONTEXT: "SentinelGRC Risk Co-pilot",
 
-        sendMessage: function (sMessage) {
-            return delay(900 + Math.random() * 600).then(function () {
-                return buildResponse(sMessage);
+        sendMessage: function (sMessage, aHistory) {
+            return askAiCore("copilotChat", {
+                message: sMessage,
+                history: JSON.stringify(aHistory || [])
+            }, "reply").then(function (sReply) {
+                if (sReply) return sReply;
+                // No AI Core (or it failed) — keep the chat usable. The pause
+                // is what stops the canned reply landing before the user has
+                // finished reading their own message.
+                return delay(900 + Math.random() * 600).then(function () {
+                    return buildResponse(sMessage);
+                });
             });
         },
 
         generateBriefing: function () {
-            return delay(2000).then(function () {
-                var v = ctx().violations;
-                var r = ctx().riskScore;
-                var c = ctx().complianceScore;
-                var u = ctx().usersScanned;
-                var h = ctx().highCount;
-                var scan = ctx().scanCode;
-                var date = ctx().lastScanAt ? ctx().lastScanAt.substring(0, 10) : new Date().toISOString().substring(0, 10);
-
-                return "**Executive Security Briefing — SentinelGRC · RD1**\n\n" +
-                    "The latest security scan (**" + scan + "**) completed on " + date + " identified **" + v + " active SoD violations** across **" + u + " SAP users**, yielding a risk score of **" + r + "/100** and compliance score of **" + c + "%**. " +
-                    (h > 0 ? "The most critical finding involves **" + h + " high-severity violations** where users hold conflicting roles in financial approval workflows, creating direct fraud exposure in the procure-to-pay cycle." : "No high-severity violations were detected in this scan.") + "\n\n" +
-                    "**Top 3 Priority Actions:**\n" +
-                    "1. " + (h > 0 ? "Immediately revoke conflicting financial roles from the **" + h + " high-severity violation users** — specifically those combining vendor creation with payment approval capabilities." : "Maintain current access controls and schedule quarterly review to sustain compliance posture.") + "\n" +
-                    "2. Review and restrict all users identified with **critical role assignments** (SAP_ALL equivalent profiles) — these represent the highest privilege escalation risk in the system.\n" +
-                    "3. Schedule emergency access review with business owners for all High-severity violations within **48 hours** and implement compensating controls until roles are remediated.\n\n" +
-                    "**Positive Observation:** **" + c + "% compliance score** indicates " + (c >= 90 ? "a strong security posture." : "an acceptable baseline with clear improvement path.") + " The automated detection pipeline successfully identified all violations within seconds of scan initiation, enabling rapid response.";
-            });
-        },
-
-        generateTriage: function () {
-            return delay(1800).then(function () {
-                var h = ctx().highCount;
-                var m = ctx().mediumCount;
-                var l = ctx().lowCount;
-                return [
-                    {
-                        title: "Financial Fraud Risk",
-                        count: h,
-                        priority: "High",
-                        rootCause: "Procure-to-pay and vendor payment roles combined on same users — direct SoD conflict in MM/FI modules",
-                        action: "Remove payment approval roles from users holding vendor creation access. Implement dual-control workflow for all payments."
-                    },
-                    {
-                        title: "Privilege Escalation",
-                        count: m,
-                        priority: "High",
-                        rootCause: "User administration roles combined with role assignment capabilities allow self-privilege escalation",
-                        action: "Revoke role assignment transactions (SU01, PFCG) from users holding user creation rights."
-                    },
-                    {
-                        title: "Audit & Reporting Integrity",
-                        count: l,
-                        priority: "Medium",
-                        rootCause: "Journal entry posting combined with financial reporting access creates risk of data manipulation before audit",
-                        action: "Implement display-only access for FI reporting roles. Require second approval for journal entries."
-                    }
-                ];
+            return askAiCore("generateBriefing", {}, "text").then(function (sText) {
+                return sText || buildBriefing();
             });
         },
 
         generateRemediation: function (oViolation) {
-            return delay(1500).then(function () {
-                return "**Remediation Playbook — " + (oViolation.userName || oViolation.userId) + "**\n\n" +
-                    "**Immediate Action:** Place user account under enhanced monitoring and notify the user's manager.\n\n" +
-                    "**Step-by-Step SAP Remediation:**\n" +
-                    "1. Log into SAP with basis administrator credentials\n" +
-                    "2. Execute transaction **SU01** → enter user ID **" + oViolation.userId + "**\n" +
-                    "3. Navigate to the **Roles** tab\n" +
-                    "4. Remove role **" + oViolation.roleB + "** (the conflicting role)\n" +
-                    "5. Save changes and document in the system notes\n" +
-                    "6. Execute **SU53** to verify access removal\n\n" +
-                    "**Compensating Controls:**\n" +
-                    "- Enable enhanced audit logging for user " + oViolation.userId + " in SM19\n" +
-                    "- Require dual approval for all transactions involving " + oViolation.roleA + "\n\n" +
-                    "**Preventive Measures:**\n" +
-                    "- Add this role combination to SentinelGRC SoD rule engine\n" +
-                    "- Implement automated quarterly access review for finance roles\n" +
-                    "- Enable real-time alerts for this role combination assignment";
+            return askAiCore("generateRemediation", {
+                violationId: oViolation.ID
+            }, "text").then(function (sText) {
+                return sText || buildRemediation(oViolation);
             });
         },
 
         generateRuleDescription: function (oRule) {
-            return delay(1000).then(function () {
-                return "This SoD rule detects a conflict between **" + (oRule.roleA || "Role A") + "** and **" + (oRule.roleB || "Role B") + "**. " +
-                    "Combining these roles allows a single user to initiate and approve the same business transaction, " +
-                    "bypassing the four-eyes principle and creating a " + (oRule.riskLevel || "High") + " risk of fraud or error. " +
-                    "This rule is aligned with SAP GRC best practices and SOX compliance requirements.";
+            return askAiCore("generateRuleDescription", {
+                roleA:     oRule.roleA,
+                roleB:     oRule.roleB,
+                riskLevel: oRule.riskLevel
+            }, "text").then(function (sText) {
+                return sText || buildRuleDescription(oRule);
+            });
+        },
+
+        /**
+         * Group the open violations into themed clusters for the Smart Triage
+         * card. Resolves to an array of
+         * { title, rootCause, action, priority, count }.
+         */
+        generateTriage: function () {
+            return askAiCore("generateTriage", {}, "clusters").then(function (sJson) {
+                if (sJson) {
+                    try {
+                        var aParsed = JSON.parse(sJson);
+                        if (Array.isArray(aParsed) && aParsed.length) return aParsed;
+                    } catch (e) {
+                        // eslint-disable-next-line no-console
+                        console.warn("[Copilot] triage JSON was unreadable:", e);
+                    }
+                }
+                return buildTriage();
             });
         }
     };

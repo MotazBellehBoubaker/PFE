@@ -231,6 +231,52 @@
                     </content>
                 </Panel>
 
+                <!-- Smart Triage -->
+                <Panel class="sapUiSmallMarginBottom">
+                    <headerToolbar>
+                        <Toolbar>
+                            <core:Icon src="sap-icon://ai" color="Highlight" class="sapUiSmallMarginEnd"/>
+                            <Title text="Smart Triage" level="H5"/>
+                            <ObjectStatus text="AI-powered" state="Information" class="sapUiSmallMarginBegin"/>
+                            <ToolbarSpacer/>
+                            <Button
+                                text="{= ${appState>/triageLoading} ? 'Analyzing...' : (${appState>/triageInsights} ? 'Re-cluster' : 'Cluster Violations') }"
+                                icon="sap-icon://ai"
+                                press=".onGenerateTriage"
+                                enabled="{= !${appState>/triageLoading} }"/>
+                        </Toolbar>
+                    </headerToolbar>
+                    <content>
+                        <VBox class="sapUiSmallMargin">
+                            <BusyIndicator visible="{appState>/triageLoading}" size="1rem"/>
+                            <Text visible="{= !${appState>/triageLoading} &amp;&amp; !${appState>/triageInsights} }"
+                                text="Group open violations into actionable themes with root cause analysis."/>
+                            <List visible="{= !${appState>/triageLoading} &amp;&amp; !!${appState>/triageInsights} }"
+                                items="{appState>/triageInsights}" showSeparators="None" backgroundDesign="Transparent">
+                                <items>
+                                    <CustomListItem>
+                                        <Panel class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                                            <content>
+                                                <VBox class="sapUiSmallMargin">
+                                                    <HBox justifyContent="SpaceBetween" alignItems="Center" class="sapUiSmallMarginBottom">
+                                                        <ObjectStatus text="{appState>priority}" state="{path: 'appState>priority', formatter: '.formatter.severityState'}"/>
+                                                        <Text text="{appState>count} violations" class="sapUiSmallText"/>
+                                                    </HBox>
+                                                    <Title text="{appState>title}" level="H6" class="sapUiSmallMarginBottom"/>
+                                                    <Label text="Root Cause" design="Bold"/>
+                                                    <Text text="{appState>rootCause}" wrapping="true" class="sapUiSmallMarginBottom"/>
+                                                    <Label text="Recommended Action" design="Bold"/>
+                                                    <Text text="{appState>action}" wrapping="true"/>
+                                                </VBox>
+                                            </content>
+                                        </Panel>
+                                    </CustomListItem>
+                                </items>
+                            </List>
+                        </VBox>
+                    </content>
+                </Panel>
+
                 <!-- Recent High Violations -->
                 <Panel class="sapUiSmallMarginBottom">
                     <headerToolbar>

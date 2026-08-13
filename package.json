@@ -23,7 +23,7 @@
     "start": "cds-serve",
     "dev": "cds watch --profile hybrid",
     "build": "cds build --production",
-    "test": "node --check srv/handlers/security-handler.js && node --check srv/handlers/s4-connector.js && node --check srv/handlers/sod-engine.js && node --check srv/handlers/compliance-engine.js && node --check srv/handlers/scheduler.js && node --check srv/handlers/report-generator.js && node --check srv/handlers/security-notes-catalog.js && node --check srv/lib/credential-store.js"
+    "test": "node --check srv/handlers/security-handler.js && node --check srv/handlers/s4-connector.js && node --check srv/handlers/sod-engine.js && node --check srv/handlers/compliance-engine.js && node --check srv/handlers/scheduler.js && node --check srv/handlers/report-generator.js && node --check srv/handlers/security-notes-catalog.js && node --check srv/lib/credential-store.js && node --check srv/lib/ai-core.js && node --check srv/handlers/copilot.js"
   },
   "private": true,
   "cds": {

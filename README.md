@@ -10,7 +10,7 @@ following SAP UXC standards and the official SAP BTP DevOps best practices.
 - Excessive privilege analysis
 - Patch & compliance visibility
 - Risk scoring per user and per scan
-- AI Co-pilot powered by Claude (Anthropic)
+- AI Co-pilot 
 - Executive briefing and smart triage generation
 - Full CI/CD pipeline visibility (SAP CI/CD Service)
 - Alert Notification log (SAP Alert Notification Service)
