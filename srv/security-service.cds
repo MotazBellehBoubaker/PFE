@@ -63,12 +63,6 @@ service SecurityService @(path: '/security-service') {
         text   : LargeString;
         source : String;
     };
-    // `clusters` is a JSON array of { title, rootCause, action, priority, count }
-    // — LargeString rather than a typed array because the shape is model output.
-    action generateTriage() returns {
-        clusters : LargeString;
-        source   : String;
-    };
 
     action saveRemediationTask(
         violationId   : String,

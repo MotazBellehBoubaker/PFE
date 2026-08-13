@@ -217,36 +217,6 @@ sap.ui.define([], function () {
             "This rule is aligned with SAP GRC best practices and SOX compliance requirements.";
     }
 
-    /**
-     * Clusters built from the severity counts alone — the only grouping that
-     * can be derived client-side without the violation rows. Empty severities
-     * are dropped so the card never shows a "0 violations" theme.
-     */
-    function buildTriage() {
-        return [
-            {
-                title:     "Procure-to-pay conflicts",
-                rootCause: "Users hold both vendor master maintenance and payment approval, so one person can create a payee and pay it.",
-                action:    "Remove the approval role in SU10 and route approvals through a dedicated release group.",
-                priority:  "High",
-                count:     ctx().highCount
-            },
-            {
-                title:     "Privilege escalation",
-                rootCause: "User administration combined with role assignment lets a user grant themselves any authorisation.",
-                action:    "Split SU01 and PFCG authorisations across two teams, then review the change log in SM19.",
-                priority:  "Medium",
-                count:     ctx().mediumCount
-            },
-            {
-                title:     "Reporting overlaps",
-                rootCause: "Display and reporting roles overlap across modules — low fraud risk but they inflate the violation count.",
-                action:    "Consolidate into a single read-only reporting role during the next PFCG cleanup.",
-                priority:  "Low",
-                count:     ctx().lowCount
-            }
-        ].filter(function (o) { return o.count > 0; });
-    }
 
     return {
 
@@ -298,26 +268,7 @@ sap.ui.define([], function () {
             }, "text").then(function (sText) {
                 return sText || buildRuleDescription(oRule);
             });
-        },
-
-        /**
-         * Group the open violations into themed clusters for the Smart Triage
-         * card. Resolves to an array of
-         * { title, rootCause, action, priority, count }.
-         */
-        generateTriage: function () {
-            return askAiCore("generateTriage", {}, "clusters").then(function (sJson) {
-                if (sJson) {
-                    try {
-                        var aParsed = JSON.parse(sJson);
-                        if (Array.isArray(aParsed) && aParsed.length) return aParsed;
-                    } catch (e) {
-                        // eslint-disable-next-line no-console
-                        console.warn("[Copilot] triage JSON was unreadable:", e);
-                    }
-                }
-                return buildTriage();
-            });
         }
+
     };
 });

@@ -129,8 +129,6 @@
             "selectedViolationId": null,
             "execSummary": null,
             "execSummaryLoading": false,
-            "triageInsights": null,
-            "triageLoading": false,
             "isAnalyst": false
           }
         }

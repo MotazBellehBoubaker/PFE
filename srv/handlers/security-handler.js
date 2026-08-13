@@ -25,8 +25,7 @@ const {
     buildReply:            copilotReply,
     buildBriefing:         copilotBriefing,
     buildRemediation:      copilotRemediation,
-    buildRuleDescription:  copilotRuleDescription,
-    buildTriage:           copilotTriage
+    buildRuleDescription:  copilotRuleDescription
 } = require('./copilot');
 
 /**
@@ -903,13 +902,6 @@ module.exports = class SecurityHandler extends cds.ApplicationService {
         aiAction('generateRemediation', (d) => copilotRemediation(d.violationId), 'text');
         aiAction('generateRuleDescription',
             (d) => copilotRuleDescription(d.roleA, d.roleB, d.riskLevel), 'text');
-        aiAction('generateTriage',
-            async () => {
-                const aClusters = await copilotTriage();
-                // The action returns a string; an empty cluster list is not an
-                // answer, so treat it as a fallback rather than shipping '[]'.
-                return aClusters && aClusters.length ? JSON.stringify(aClusters) : null;
-            }, 'clusters');
 
         // ── saveRemediationTask ──────────────────────────────────────────
         this.on('saveRemediationTask', async (req) => {

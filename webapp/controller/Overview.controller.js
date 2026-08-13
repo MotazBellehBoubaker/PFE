@@ -272,21 +272,6 @@ sap.ui.define([
                     oAppState.setProperty("/execSummaryLoading", false);
                     this.showError("Failed to generate briefing.");
                 }.bind(this));
-        },
-
-        onGenerateTriage: function () {
-            var oAppState = this.getModel("appState");
-            oAppState.setProperty("/triageLoading", true);
-            oAppState.setProperty("/triageInsights", null);
-            CopilotService.generateTriage()
-                .then(function (aResults) {
-                    oAppState.setProperty("/triageInsights", aResults);
-                    oAppState.setProperty("/triageLoading", false);
-                }.bind(this))
-                .catch(function () {
-                    oAppState.setProperty("/triageLoading", false);
-                    this.showError("Failed to analyze violations.");
-                }.bind(this));
         }
     });
 });

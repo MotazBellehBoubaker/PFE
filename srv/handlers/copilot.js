@@ -3,7 +3,7 @@
 /*
  * The AI surface: the Risk Co-pilot chat plus the four one-shot generators
  * behind the "AI" buttons (executive briefing, remediation playbook, SoD rule
- * description, smart triage).
+ * description).
  *
  * The model never queries the database itself. Instead every call carries a
  * freshly-built snapshot of the latest scan (totals, plus the highest-severity
@@ -217,54 +217,11 @@ async function buildRuleDescription(sRoleA, sRoleB, sRiskLevel) {
     );
 }
 
-/**
- * Group the open violations into themed clusters.
- *
- * Returns a parsed array of { title, rootCause, action, priority, count }, or
- * null when AI Core is off. The model is asked for bare JSON, but models like
- * to wrap it in a code fence, so strip one before parsing.
- */
-async function buildTriage() {
-    const sRaw = await oneShot(
-        'You are an SAP GRC analyst clustering open SoD violations into themes a ' +
-        'remediation team can work as units.',
-        'Respond with a JSON array and nothing else — no prose, no code fence. ' +
-        'Each element: {"title": short theme name, "rootCause": why this cluster ' +
-        'exists, "action": the single next step, "priority": exactly one of ' +
-        '"High" / "Medium" / "Low", "count": how many of the listed violations ' +
-        'fall in it}. Return at most 4 clusters, highest priority first, and ' +
-        'cover only the violations listed below.',
-        'Cluster the open violations.'
-    );
-    if (!sRaw) return null;
-
-    const sJson = sRaw.trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/, '').trim();
-
-    let aParsed;
-    try {
-        aParsed = JSON.parse(sJson);
-    } catch {
-        throw new Error('AI Core returned triage output that is not valid JSON');
-    }
-    if (!Array.isArray(aParsed)) throw new Error('AI Core triage output is not an array');
-
-    // The list feeds a formatter that only knows the three severity names, so
-    // anything else would render with no status colour at all.
-    const aAllowed = ['High', 'Medium', 'Low'];
-    return aParsed.slice(0, 4).map((o) => ({
-        title:     String(o?.title     || 'Untitled cluster'),
-        rootCause: String(o?.rootCause || ''),
-        action:    String(o?.action    || ''),
-        priority:  aAllowed.includes(o?.priority) ? o.priority : 'Medium',
-        count:     Number(o?.count) || 0
-    }));
-}
 
 module.exports = {
     buildReply,
     formatContext,
     buildBriefing,
     buildRemediation,
-    buildRuleDescription,
-    buildTriage
+    buildRuleDescription
 };
